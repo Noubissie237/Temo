@@ -100,62 +100,31 @@ fun TaskEditorScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
-                )
+                ),
+                windowInsets = WindowInsets(top = 0.dp)
             )
-        },
-        floatingActionButton = {
-            // Validation du formulaire
-            val isFormValid = title.isNotBlank() && when (selectedType) {
-                TaskType.DAILY -> true // Pas de validation supplémentaire
-                TaskType.PERIODIC -> selectedDays.isNotEmpty() // Au moins un jour sélectionné
-                TaskType.OCCASIONAL -> selectedDate != null // Une date sélectionnée
-            }
-            
-            FloatingActionButton(
-                onClick = {
-                    if (isFormValid) {
-                        val task = Task(
-                            id = taskId ?: UUID.randomUUID().toString(),
-                            title = title,
-                            description = description,
-                            type = selectedType,
-                            specificDate = if (selectedType == TaskType.OCCASIONAL) selectedDate else null,
-                            selectedDays = if (selectedType == TaskType.PERIODIC) selectedDays else emptyList(),
-                            priority = selectedPriority,
-                            isCompleted = false
-                        )
-                        
-                        if (isEditMode) {
-                            viewModel.updateTask(task)
-                        } else {
-                            viewModel.addTask(task)
-                        }
-                        onNavigateBack()
-                    }
-                },
-                containerColor = if (isFormValid) 
-                    MaterialTheme.colorScheme.primary 
-                else 
-                    MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = "Enregistrer",
-                    tint = if (isFormValid) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
         }
     ) { paddingValues ->
+        // Validation du formulaire
+        val isFormValid = title.isNotBlank() && when (selectedType) {
+            TaskType.DAILY -> true
+            TaskType.PERIODIC -> selectedDays.isNotEmpty()
+            TaskType.OCCASIONAL -> selectedDate != null
+        }
+        
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.background)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
             // Champ titre
             OutlinedTextField(
                 value = title,
@@ -271,6 +240,48 @@ fun TaskEditorScreen(
                     isSelected = selectedPriority == TaskPriority.LOW,
                     onClick = { selectedPriority = TaskPriority.LOW },
                     modifier = Modifier.weight(1f)
+                )
+            }
+        }
+            
+            // Bouton Sauvegarder en bas
+            Button(
+                onClick = {
+                    if (isFormValid) {
+                        val task = Task(
+                            id = taskId ?: UUID.randomUUID().toString(),
+                            title = title,
+                            description = description,
+                            type = selectedType,
+                            specificDate = if (selectedType == TaskType.OCCASIONAL) selectedDate else null,
+                            selectedDays = if (selectedType == TaskType.PERIODIC) selectedDays else emptyList(),
+                            priority = selectedPriority,
+                            isCompleted = false
+                        )
+                        
+                        if (isEditMode) {
+                            viewModel.updateTask(task)
+                        } else {
+                            viewModel.addTask(task)
+                        }
+                        onNavigateBack()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .height(56.dp),
+                enabled = isFormValid,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Text(
+                    text = "Sauvegarder",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }

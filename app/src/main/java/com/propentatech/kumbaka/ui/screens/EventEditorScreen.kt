@@ -100,55 +100,25 @@ fun EventEditorScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
-                )
+                ),
+                windowInsets = WindowInsets(top = 0.dp)
             )
-        },
-        floatingActionButton = {
-            // Validation du formulaire
-            val isFormValid = title.isNotBlank() && selectedDate != null
-            
-            FloatingActionButton(
-                onClick = { 
-                    if (isFormValid) {
-                        val event = Event(
-                            id = eventId ?: UUID.randomUUID().toString(),
-                            title = title,
-                            description = description,
-                            location = location,
-                            date = selectedDate,
-                            time = selectedTime
-                        )
-                        
-                        if (isEditMode) {
-                            viewModel.updateEvent(event)
-                        } else {
-                            viewModel.addEvent(event)
-                        }
-                        onNavigateBack()
-                    }
-                },
-                containerColor = if (isFormValid) 
-                    MaterialTheme.colorScheme.primary 
-                else 
-                    MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = "Sauvegarder",
-                    tint = if (isFormValid) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
         }
     ) { paddingValues ->
-        LazyColumn(
+        // Validation du formulaire
+        val isFormValid = title.isNotBlank() && selectedDate != null
+        
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .background(MaterialTheme.colorScheme.background)
         ) {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
             // Titre
             item {
                 Column {
@@ -329,6 +299,46 @@ fun EventEditorScreen(
                         enabled = false
                     )
                 }
+            }
+            }
+            
+            // Bouton Sauvegarder en bas
+            Button(
+                onClick = {
+                    if (isFormValid) {
+                        val event = Event(
+                            id = eventId ?: UUID.randomUUID().toString(),
+                            title = title,
+                            description = description,
+                            location = location,
+                            date = selectedDate,
+                            time = selectedTime
+                        )
+                        
+                        if (isEditMode) {
+                            viewModel.updateEvent(event)
+                        } else {
+                            viewModel.addEvent(event)
+                        }
+                        onNavigateBack()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .height(56.dp),
+                enabled = isFormValid,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Text(
+                    text = "Sauvegarder",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }

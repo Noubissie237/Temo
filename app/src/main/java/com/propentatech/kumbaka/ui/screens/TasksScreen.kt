@@ -89,7 +89,8 @@ fun TasksScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
-                )
+                ),
+                windowInsets = WindowInsets(top = 0.dp)
             )
         },
         floatingActionButton = {
