@@ -3,7 +3,6 @@ package com.propentatech.kumbaka.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.propentatech.kumbaka.data.model.Note
-import com.propentatech.kumbaka.data.model.NoteType
 import com.propentatech.kumbaka.data.repository.NoteRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,7 +16,7 @@ import kotlinx.coroutines.launch
  * Gère l'état et la logique métier des notes
  */
 class NoteViewModel(
-    private val repository: NoteRepository = NoteRepository()
+    private val repository: NoteRepository
 ) : ViewModel() {
 
     val notes: StateFlow<List<Note>> = repository.notes
@@ -27,8 +26,8 @@ class NoteViewModel(
             initialValue = emptyList()
         )
 
-    private val _selectedNoteType = MutableStateFlow<NoteType?>(null)
-    val selectedNoteType: StateFlow<NoteType?> = _selectedNoteType.asStateFlow()
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     /**
      * Ajoute une nouvelle note
@@ -60,28 +59,24 @@ class NoteViewModel(
     /**
      * Récupère une note par son ID
      */
-    fun getNoteById(noteId: String): Note? {
+    suspend fun getNoteById(noteId: String): Note? {
         return repository.getNoteById(noteId)
-    }
-
-    /**
-     * Filtre les notes par type
-     */
-    fun filterNotesByType(type: NoteType?) {
-        _selectedNoteType.value = type
-    }
-
-    /**
-     * Récupère les notes filtrées
-     */
-    fun getFilteredNotes(): List<Note> {
-        return repository.getNotesByType(_selectedNoteType.value)
     }
 
     /**
      * Recherche des notes
      */
-    fun searchNotes(query: String): List<Note> {
-        return repository.searchNotes(query)
+    fun searchNotes(query: String): StateFlow<List<Note>> {
+        _searchQuery.value = query
+        return if (query.isBlank()) {
+            notes
+        } else {
+            repository.searchNotes(query)
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = emptyList()
+                )
+        }
     }
 }

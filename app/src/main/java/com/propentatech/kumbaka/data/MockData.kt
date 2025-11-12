@@ -19,9 +19,13 @@ object MockData {
     val mockTasks = emptyList<Task>()
 
     /**
-     * Notes d'exemple
+     * Notes d'exemple - DÉSACTIVÉ
+     * Les notes sont maintenant gérées par la base de données Room
      */
-    val mockNotes = listOf(
+    val mockNotes = emptyList<Note>()
+    
+    /*
+    val mockNotesOLD = listOf(
         Note(
             id = "note1",
             title = "Idées pour le projet X",
@@ -80,6 +84,7 @@ object MockData {
             updatedAt = LocalDateTime.now().minusDays(1)
         )
     )
+    */
 
     /**
      * Événements d'exemple - DÉSACTIVÉ

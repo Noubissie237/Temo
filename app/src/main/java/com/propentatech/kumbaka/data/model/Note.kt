@@ -1,39 +1,24 @@
 package com.propentatech.kumbaka.data.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import androidx.room.TypeConverters
+import com.propentatech.kumbaka.data.database.Converters
 import java.time.LocalDateTime
 import java.util.UUID
 
 /**
  * Modèle de données pour une note
- * Supporte différents types de contenu : texte, checklist, image, lien
+ * Une note contient du texte et peut avoir des liens de référence
  */
+@Entity(tableName = "notes")
+@TypeConverters(Converters::class)
 data class Note(
+    @PrimaryKey
     val id: String = UUID.randomUUID().toString(),
     val title: String,
     val content: String = "",
-    val type: NoteType = NoteType.TEXT,
-    val imageUrl: String? = null,
-    val checklistItems: List<ChecklistItem> = emptyList(),
     val links: List<String> = emptyList(),
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val updatedAt: LocalDateTime = LocalDateTime.now()
-)
-
-/**
- * Type de note
- */
-enum class NoteType {
-    TEXT,       // Note texte simple
-    CHECKLIST,  // Note avec checklist
-    IMAGE,      // Note avec image
-    LINK        // Note avec lien
-}
-
-/**
- * Item d'une checklist dans une note
- */
-data class ChecklistItem(
-    val id: String = UUID.randomUUID().toString(),
-    val text: String,
-    val isChecked: Boolean = false
 )

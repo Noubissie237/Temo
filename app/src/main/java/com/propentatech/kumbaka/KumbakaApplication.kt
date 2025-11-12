@@ -4,6 +4,7 @@ import android.app.Application
 import com.propentatech.kumbaka.data.MockData
 import com.propentatech.kumbaka.data.database.KumbakaDatabase
 import com.propentatech.kumbaka.data.repository.EventRepository
+import com.propentatech.kumbaka.data.repository.NoteRepository
 import com.propentatech.kumbaka.data.repository.TaskRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +26,7 @@ class KumbakaApplication : Application() {
     // Repositories
     val taskRepository by lazy { TaskRepository(database.taskDao()) }
     val eventRepository by lazy { EventRepository(database.eventDao()) }
+    val noteRepository by lazy { NoteRepository(database.noteDao()) }
 
     override fun onCreate() {
         super.onCreate()

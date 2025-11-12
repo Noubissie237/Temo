@@ -26,6 +26,8 @@ import com.propentatech.kumbaka.data.model.*
 import com.propentatech.kumbaka.ui.theme.*
 import com.propentatech.kumbaka.ui.viewmodel.EventViewModel
 import com.propentatech.kumbaka.ui.viewmodel.EventViewModelFactory
+import com.propentatech.kumbaka.ui.viewmodel.NoteViewModel
+import com.propentatech.kumbaka.ui.viewmodel.NoteViewModelFactory
 import com.propentatech.kumbaka.ui.viewmodel.TaskViewModel
 import com.propentatech.kumbaka.ui.viewmodel.TaskViewModelFactory
 import java.time.LocalDate
@@ -67,8 +69,14 @@ fun HomeScreen(
     val allEvents by eventViewModel.events.collectAsState()
     val events = allEvents.sortedBy { it.date }.take(3)
     
-    // Données mock pour notes (temporaire)
-    val notes = remember { MockData.mockNotes.take(4) }
+    // Récupérer le ViewModel pour les notes
+    val noteViewModel: NoteViewModel = viewModel(
+        factory = NoteViewModelFactory(application.noteRepository)
+    )
+    
+    // Observer les notes depuis la base de données
+    val allNotes by noteViewModel.notes.collectAsState()
+    val notes = allNotes.sortedByDescending { it.updatedAt }.take(4)
 
     Scaffold(
         topBar = {

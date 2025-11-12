@@ -18,17 +18,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.propentatech.kumbaka.data.MockData
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.propentatech.kumbaka.KumbakaApplication
 import com.propentatech.kumbaka.data.model.Note
-import com.propentatech.kumbaka.data.model.NoteType
 import com.propentatech.kumbaka.ui.theme.*
+import com.propentatech.kumbaka.ui.viewmodel.NoteViewModel
+import com.propentatech.kumbaka.ui.viewmodel.NoteViewModelFactory
 import java.time.format.DateTimeFormatter
 
 /**
  * Écran de gestion des notes
- * Affiche les notes avec filtres par type (Tout, Checklists, Avec images, Liens)
+ * Affiche toutes les notes avec recherche
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,15 +39,23 @@ fun NotesScreen(
     onNoteClick: (String) -> Unit = {},
     onCreateNote: () -> Unit = {}
 ) {
-    // Données mock
-    val allNotes = remember { MockData.mockNotes }
-    var selectedFilter by remember { mutableStateOf<NoteType?>(null) }
+    // Récupérer le ViewModel
+    val context = LocalContext.current
+    val application = context.applicationContext as KumbakaApplication
+    val viewModel: NoteViewModel = viewModel(
+        factory = NoteViewModelFactory(application.noteRepository)
+    )
     
-    val filteredNotes = remember(selectedFilter) {
-        if (selectedFilter == null) {
-            allNotes
-        } else {
-            allNotes.filter { it.type == selectedFilter }
+    // Observer les notes depuis la base de données
+    val allNotes by viewModel.notes.collectAsState()
+    var searchQuery by remember { mutableStateOf("") }
+    
+    val filteredNotes = if (searchQuery.isBlank()) {
+        allNotes
+    } else {
+        allNotes.filter { note ->
+            note.title.contains(searchQuery, ignoreCase = true) ||
+            note.content.contains(searchQuery, ignoreCase = true)
         }
     }
 
@@ -55,28 +66,25 @@ fun NotesScreen(
                     Text(
                         text = "Mes Notes",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        fontWeight = FontWeight.Bold
                     )
                 },
                 actions = {
                     IconButton(onClick = { /* TODO: Recherche */ }) {
                         Icon(
                             Icons.Default.Search,
-                            contentDescription = "Rechercher",
-                            tint = Color.White
+                            contentDescription = "Rechercher"
                         )
                     }
                     IconButton(onClick = { /* TODO: Options */ }) {
                         Icon(
                             Icons.Default.MoreVert,
-                            contentDescription = "Options",
-                            tint = Color.White
+                            contentDescription = "Options"
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BackgroundDark
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             )
         },
@@ -93,92 +101,22 @@ fun NotesScreen(
                 )
             }
         },
-        containerColor = BackgroundDark
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Column(
+        // Liste des notes
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Filtres
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item {
-                    FilterChip(
-                        label = "Tout",
-                        isSelected = selectedFilter == null,
-                        onClick = { selectedFilter = null }
-                    )
-                }
-                item {
-                    FilterChip(
-                        label = "Checklists",
-                        isSelected = selectedFilter == NoteType.CHECKLIST,
-                        onClick = { selectedFilter = NoteType.CHECKLIST }
-                    )
-                }
-                item {
-                    FilterChip(
-                        label = "Avec images",
-                        isSelected = selectedFilter == NoteType.IMAGE,
-                        onClick = { selectedFilter = NoteType.IMAGE }
-                    )
-                }
-                item {
-                    FilterChip(
-                        label = "Liens",
-                        isSelected = selectedFilter == NoteType.LINK,
-                        onClick = { selectedFilter = NoteType.LINK }
-                    )
-                }
+            items(filteredNotes) { note ->
+                NoteCard(
+                    note = note,
+                    onClick = { onNoteClick(note.id) }
+                )
             }
-
-            // Liste des notes
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(filteredNotes) { note ->
-                    NoteCard(
-                        note = note,
-                        onClick = { onNoteClick(note.id) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * Chip de filtre personnalisé
- */
-@Composable
-fun FilterChip(
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        color = if (isSelected) PrimaryBlue else SurfaceDark,
-        modifier = Modifier.height(36.dp)
-    ) {
-        Box(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (isSelected) Color.White else TextSecondaryDark,
-                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
-            )
         }
     }
 }
@@ -204,25 +142,6 @@ fun NoteCard(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Image si présente
-            if (note.type == NoteType.IMAGE && note.imageUrl != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(150.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    Color(0xFF9C27B0),
-                                    Color(0xFF2196F3)
-                                )
-                            )
-                        )
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
             // Titre
             Text(
                 text = note.title,
@@ -234,16 +153,28 @@ fun NoteCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Contenu
-            Text(
-                text = note.content,
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondaryDark,
-                maxLines = 3
-            )
+            if (note.content.isNotBlank()) {
+                Text(
+                    text = note.content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondaryDark,
+                    maxLines = 3
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            
+            // Liens (si présents)
+            if (note.links.isNotEmpty()) {
+                Text(
+                    text = "🔗 ${note.links.size} lien(s)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = PrimaryBlue,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Footer avec date et icône de type
+            // Footer avec date
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -254,27 +185,6 @@ fun NoteCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondaryDark
                 )
-                
-                // Icône selon le type de note
-                when (note.type) {
-                    NoteType.IMAGE -> {
-                        Icon(
-                            imageVector = Icons.Default.Add, // Remplacer par icône image
-                            contentDescription = "Note avec image",
-                            tint = TextSecondaryDark,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    NoteType.LINK -> {
-                        Icon(
-                            imageVector = Icons.Default.Add, // Remplacer par icône lien
-                            contentDescription = "Note avec lien",
-                            tint = TextSecondaryDark,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    else -> {}
-                }
             }
         }
     }

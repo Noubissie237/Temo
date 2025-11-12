@@ -1,12 +1,9 @@
 package com.propentatech.kumbaka.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,20 +11,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import com.propentatech.kumbaka.data.model.ChecklistItem
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.propentatech.kumbaka.KumbakaApplication
+import com.propentatech.kumbaka.data.model.Note
 import com.propentatech.kumbaka.ui.theme.*
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import com.propentatech.kumbaka.ui.viewmodel.NoteViewModel
+import com.propentatech.kumbaka.ui.viewmodel.NoteViewModelFactory
+import java.util.UUID
 
 /**
  * Écran d'édition de note
- * Permet de créer/éditer une note avec titre, contenu, checklist, image et liens
+ * Permet de créer/éditer une note avec titre, contenu et liens
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,25 +33,43 @@ fun NoteEditorScreen(
     noteId: String? = null,
     onNavigateBack: () -> Unit = {}
 ) {
-    var title by remember { mutableStateOf("Titre") }
-    var content by remember { mutableStateOf("Commencez à écrire votre note ici...") }
-    var hasImage by remember { mutableStateOf(false) }
-    var checklistItems by remember { 
-        mutableStateOf(listOf(
-            ChecklistItem(text = "Finaliser le design de l'application", isChecked = true),
-            ChecklistItem(text = "Préparer la présentation pour lundi", isChecked = false),
-            ChecklistItem(text = "Contacter le client pour un retour", isChecked = false)
-        ))
-    }
-    var hasLink by remember { mutableStateOf(true) }
-    var linkText by remember { mutableStateOf("Consulter la documentation du projet") }
+    // Récupérer le ViewModel
+    val context = LocalContext.current
+    val application = context.applicationContext as KumbakaApplication
+    val viewModel: NoteViewModel = viewModel(
+        factory = NoteViewModelFactory(application.noteRepository)
+    )
     
-    val lastModified = remember { LocalDateTime.now() }
+    // État local
+    var title by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf("") }
+    var links by remember { mutableStateOf(listOf<String>()) }
+    var newLink by remember { mutableStateOf("") }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    
+    val isEditMode = noteId != null
+    
+    // Charger la note si on est en mode édition
+    LaunchedEffect(noteId) {
+        if (noteId != null) {
+            viewModel.getNoteById(noteId)?.let { note ->
+                title = note.title
+                content = note.content
+                links = note.links
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { },
+                title = {
+                    Text(
+                        text = if (isEditMode) "Modifier la note" else "Nouvelle note",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -63,87 +79,24 @@ fun NoteEditorScreen(
                     }
                 },
                 actions = {
-                    // Actions de la barre supérieure
-                    IconButton(onClick = { hasImage = !hasImage }) {
-                        Icon(
-                            Icons.Default.Add, // Remplacer par icône image
-                            contentDescription = "Ajouter une image"
-                        )
-                    }
-                    IconButton(onClick = { /* TODO: Format texte */ }) {
-                        Icon(
-                            Icons.Default.Add, // Remplacer par icône texte
-                            contentDescription = "Formater le texte"
-                        )
-                    }
-                    IconButton(onClick = { /* TODO: Partager */ }) {
-                        Icon(
-                            Icons.Default.Share,
-                            contentDescription = "Partager"
-                        )
-                    }
-                    IconButton(onClick = { /* TODO: Supprimer */ }) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Supprimer"
-                        )
+                    if (isEditMode) {
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Supprimer",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { 
-                    // TODO: Sauvegarder la note
-                    onNavigateBack()
-                },
-                containerColor = SecondaryPurple,
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = "Sauvegarder",
-                    tint = Color.White
-                )
-            }
-        },
-        bottomBar = {
-            // Barre d'outils en bas
-            BottomAppBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    IconButton(onClick = { 
-                        checklistItems = checklistItems + ChecklistItem(text = "")
-                    }) {
-                        Icon(
-                            Icons.Default.Add, // Remplacer par icône checklist
-                            contentDescription = "Ajouter checklist"
-                        )
-                    }
-                    IconButton(onClick = { hasImage = !hasImage }) {
-                        Icon(
-                            Icons.Default.Add, // Remplacer par icône image
-                            contentDescription = "Ajouter image"
-                        )
-                    }
-                    IconButton(onClick = { hasLink = !hasLink }) {
-                        Icon(
-                            Icons.Default.Add, // Remplacer par icône lien
-                            contentDescription = "Ajouter lien"
-                        )
-                    }
-                }
-            }
         }
     ) { paddingValues ->
+        // Validation du formulaire
+        val isFormValid = title.isNotBlank()
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -154,186 +107,194 @@ fun NoteEditorScreen(
         ) {
             // Titre
             item {
-                TextField(
+                OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
                     modifier = Modifier.fillMaxWidth(),
-                    textStyle = MaterialTheme.typography.headlineMedium.copy(
+                    label = { Text("Titre *") },
+                    textStyle = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold
                     ),
-                    placeholder = {
-                        Text(
-                            text = "Titre",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
                     )
                 )
             }
 
-            // Contenu texte
+            // Contenu
             item {
-                TextField(
+                OutlinedTextField(
                     value = content,
                     onValueChange = { content = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 100.dp),
-                    textStyle = MaterialTheme.typography.bodyLarge,
-                    placeholder = {
-                        Text(
-                            text = "Commencez à écrire votre note ici...",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        .heightIn(min = 150.dp),
+                    label = { Text("Contenu (optionnel)") },
+                    placeholder = { Text("Écrivez votre note ici...") },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
                     )
                 )
             }
 
-            // Image (si présente)
-            if (hasImage) {
-                item {
-                    Box(
+            // Section Liens
+            item {
+                Text(
+                    text = "Liens de référence",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            // Liste des liens
+            items(links) { link ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                brush = Brush.linearGradient(
-                                    colors = listOf(
-                                        Color(0xFF6B8E23),
-                                        Color(0xFF556B2F)
-                                    )
-                                )
-                            )
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Icon(
+                            Icons.Default.Share,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = link,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.weight(1f)
+                        )
                         IconButton(
-                            onClick = { hasImage = false },
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                            onClick = { links = links.filter { it != link } }
                         ) {
                             Icon(
                                 Icons.Default.Close,
-                                contentDescription = "Supprimer l'image",
-                                tint = Color.White
+                                contentDescription = "Supprimer",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
             }
 
-            // Checklist
-            items(checklistItems) { item ->
-                ChecklistItemRow(
-                    item = item,
-                    onCheckedChange = { isChecked ->
-                        checklistItems = checklistItems.map {
-                            if (it.id == item.id) it.copy(isChecked = isChecked) else it
-                        }
-                    },
-                    onTextChange = { newText ->
-                        checklistItems = checklistItems.map {
-                            if (it.id == item.id) it.copy(text = newText) else it
-                        }
-                    },
-                    onDelete = {
-                        checklistItems = checklistItems.filter { it.id != item.id }
-                    }
-                )
-            }
-
-            // Lien
-            if (hasLink) {
-                item {
-                    Text(
-                        text = linkText,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        textDecoration = TextDecoration.Underline,
-                        modifier = Modifier.clickable { /* TODO: Ouvrir le lien */ }
+            // Ajouter un lien
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = newLink,
+                        onValueChange = { newLink = it },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("Nouveau lien") },
+                        placeholder = { Text("https://...") },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        )
                     )
+                    IconButton(
+                        onClick = {
+                            if (newLink.isNotBlank()) {
+                                links = links + newLink
+                                newLink = ""
+                            }
+                        },
+                        modifier = Modifier.align(Alignment.CenterVertically)
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Ajouter",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
-
-            // Date de modification
+            
+            // Bouton de sauvegarde en bas
             item {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Modifié le ${lastModified.format(DateTimeFormatter.ofPattern("dd MMM. à HH:mm"))}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(
+                        onClick = {
+                            if (isFormValid) {
+                                val note = Note(
+                                    id = noteId ?: UUID.randomUUID().toString(),
+                                    title = title,
+                                    content = content,
+                                    links = links
+                                )
+                                
+                                if (isEditMode) {
+                                    viewModel.updateNote(note)
+                                } else {
+                                    viewModel.addNote(note)
+                                }
+                                onNavigateBack()
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth(1f)
+                            .height(56.dp),
+                        enabled = isFormValid,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Text(
+                            text = "Sauvegarder",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
         }
     }
-}
-
-/**
- * Ligne d'item de checklist
- */
-@Composable
-fun ChecklistItemRow(
-    item: ChecklistItem,
-    onCheckedChange: (Boolean) -> Unit,
-    onTextChange: (String) -> Unit,
-    onDelete: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Checkbox
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .border(
-                    width = 2.dp,
-                    color = if (item.isChecked) SecondaryPurple else MaterialTheme.colorScheme.outline,
-                    shape = CircleShape
-                )
-                .background(
-                    if (item.isChecked) SecondaryPurple else Color.Transparent
-                )
-                .clickable { onCheckedChange(!item.isChecked) },
-            contentAlignment = Alignment.Center
-        ) {
-            if (item.isChecked) {
-                Text(
-                    text = "✓",
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelSmall
-                )
+    
+    // Dialogue de suppression
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Supprimer la note ?") },
+            text = { Text("Cette action est irréversible.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        noteId?.let { viewModel.deleteNote(it) }
+                        onNavigateBack()
+                    }
+                ) {
+                    Text("Supprimer", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Annuler")
+                }
             }
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // Texte
-        Text(
-            text = item.text,
-            style = MaterialTheme.typography.bodyMedium,
-            textDecoration = if (item.isChecked) TextDecoration.LineThrough else TextDecoration.None,
-            color = if (item.isChecked) 
-                MaterialTheme.colorScheme.onSurfaceVariant 
-            else 
-                MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
         )
     }
 }

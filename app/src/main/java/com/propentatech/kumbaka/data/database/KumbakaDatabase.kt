@@ -6,15 +6,16 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.propentatech.kumbaka.data.model.Event
+import com.propentatech.kumbaka.data.model.Note
 import com.propentatech.kumbaka.data.model.Task
 
 /**
  * Base de données Room pour l'application Kumbaka
- * Gère la persistance locale des données
+ * Contient les tables pour les tâches, événements et notes
  */
 @Database(
-    entities = [Task::class, Event::class],
-    version = 2,
+    entities = [Task::class, Event::class, Note::class],
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -29,6 +30,11 @@ abstract class KumbakaDatabase : RoomDatabase() {
      * DAO pour les événements
      */
     abstract fun eventDao(): EventDao
+    
+    /**
+     * DAO pour les notes
+     */
+    abstract fun noteDao(): NoteDao
     
     companion object {
         @Volatile
