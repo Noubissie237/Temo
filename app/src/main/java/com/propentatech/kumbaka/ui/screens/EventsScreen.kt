@@ -22,7 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.propentatech.kumbaka.KumbakaApplication
 import com.propentatech.kumbaka.data.model.Event
+import com.propentatech.kumbaka.data.model.daysUntil
 import com.propentatech.kumbaka.data.model.getCountdownLabel
+import com.propentatech.kumbaka.ui.components.EmptyStateMessage
 import com.propentatech.kumbaka.ui.theme.*
 import com.propentatech.kumbaka.ui.viewmodel.EventViewModel
 import com.propentatech.kumbaka.ui.viewmodel.EventViewModelFactory
@@ -89,6 +91,16 @@ fun EventsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (events.isEmpty()) {
+                item {
+                    EmptyStateMessage(
+                        message = "Aucun événement",
+                        subtitle = "Créez votre premier événement",
+                        modifier = Modifier.padding(top = 48.dp)
+                    )
+                }
+            }
+            
             items(events) { event ->
                 EventListItem(
                     event = event,

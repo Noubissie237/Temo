@@ -28,6 +28,7 @@ import com.propentatech.kumbaka.data.model.TaskPriority
 import com.propentatech.kumbaka.data.model.TaskType
 import com.propentatech.kumbaka.data.model.shouldShowToday
 import com.propentatech.kumbaka.data.model.isCompletedToday
+import com.propentatech.kumbaka.ui.components.EmptyStateMessage
 import com.propentatech.kumbaka.ui.theme.*
 import com.propentatech.kumbaka.ui.viewmodel.TaskViewModel
 import com.propentatech.kumbaka.ui.viewmodel.TaskViewModelFactory
@@ -125,6 +126,17 @@ fun TasksScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Message si aucune tâche
+            if (todayTasks.isEmpty() && tomorrowTasks.isEmpty() && completedTasks.isEmpty()) {
+                item {
+                    EmptyStateMessage(
+                        message = "Aucune tâche",
+                        subtitle = "Créez votre première tâche pour commencer",
+                        modifier = Modifier.padding(top = 48.dp)
+                    )
+                }
+            }
+            
             // Section Aujourd'hui
             if (todayTasks.isNotEmpty()) {
                 item {

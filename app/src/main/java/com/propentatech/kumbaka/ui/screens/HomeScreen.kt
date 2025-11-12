@@ -28,6 +28,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.propentatech.kumbaka.KumbakaApplication
 import com.propentatech.kumbaka.data.MockData
 import com.propentatech.kumbaka.data.model.*
+import com.propentatech.kumbaka.ui.components.EmptyStateMessage
 import com.propentatech.kumbaka.ui.theme.*
 import com.propentatech.kumbaka.ui.viewmodel.EventViewModel
 import com.propentatech.kumbaka.ui.viewmodel.EventViewModelFactory
@@ -265,12 +266,19 @@ fun HomeScreen(
                     title = "Mes tâches du jour",
                     onSeeAllClick = onNavigateToTasks
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        todayTasks.forEach { task ->
-                            TaskItemCompact(
-                                task = task,
-                                onClick = { onTaskClick(task.id) }
-                            )
+                    if (todayTasks.isEmpty()) {
+                        EmptyStateMessage(
+                            message = "Aucune tâche pour à faire",
+                            subtitle = "Profitez de votre journée, ou ajoutez une tâche "
+                        )
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            todayTasks.forEach { task ->
+                                TaskItemCompact(
+                                    task = task,
+                                    onClick = { onTaskClick(task.id) }
+                                )
+                            }
                         }
                     }
                 }
@@ -285,12 +293,19 @@ fun HomeScreen(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        events.forEach { event ->
-                            EventItemCompact(
-                                event = event,
-                                onClick = { onEventClick(event.id) }
-                            )
+                    if (events.isEmpty()) {
+                        EmptyStateMessage(
+                            message = "Aucun événement prévu",
+                            subtitle = "Créez votre premier événement"
+                        )
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            events.forEach { event ->
+                                EventItemCompact(
+                                    event = event,
+                                    onClick = { onEventClick(event.id) }
+                                )
+                            }
                         }
                     }
                 }
@@ -305,14 +320,21 @@ fun HomeScreen(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(notes) { note ->
-                            NoteCardCompact(
-                                note = note,
-                                onClick = { onNoteClick(note.id) }
-                            )
+                    if (notes.isEmpty()) {
+                        EmptyStateMessage(
+                            message = "Aucune note",
+                            subtitle = "Commencez à prendre des notes"
+                        )
+                    } else {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(notes) { note ->
+                                NoteCardCompact(
+                                    note = note,
+                                    onClick = { onNoteClick(note.id) }
+                                )
+                            }
                         }
                     }
                 }

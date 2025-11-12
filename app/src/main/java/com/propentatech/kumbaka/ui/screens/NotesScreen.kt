@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.propentatech.kumbaka.KumbakaApplication
 import com.propentatech.kumbaka.data.model.Note
+import com.propentatech.kumbaka.ui.components.EmptyStateMessage
 import com.propentatech.kumbaka.ui.theme.*
 import com.propentatech.kumbaka.ui.viewmodel.NoteViewModel
 import com.propentatech.kumbaka.ui.viewmodel.NoteViewModelFactory
@@ -112,6 +113,16 @@ fun NotesScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (filteredNotes.isEmpty()) {
+                item {
+                    EmptyStateMessage(
+                        message = if (searchQuery.isEmpty()) "Aucune note" else "Aucun résultat",
+                        subtitle = if (searchQuery.isEmpty()) "Créez votre première note" else "Essayez avec d'autres mots-clés",
+                        modifier = Modifier.padding(top = 48.dp)
+                    )
+                }
+            }
+            
             items(filteredNotes) { note ->
                 NoteCard(
                     note = note,
