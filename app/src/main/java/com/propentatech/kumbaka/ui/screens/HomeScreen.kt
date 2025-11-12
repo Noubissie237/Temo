@@ -48,6 +48,8 @@ fun HomeScreen(
     onNavigateToTasks: () -> Unit = {},
     onNavigateToNotes: () -> Unit = {},
     onNavigateToEvents: () -> Unit = {},
+    onTaskClick: (String) -> Unit = {},
+    onEventClick: (String) -> Unit = {},
     onNoteClick: (String) -> Unit = {}
 ) {
     // Récupérer le ViewModel pour les tâches
@@ -220,12 +222,18 @@ fun HomeScreen(
                         when (category) {
                             "Tâches" -> {
                                 items(items as List<Task>) { task ->
-                                    TaskItemCompact(task = task)
+                                    TaskItemCompact(
+                                        task = task,
+                                        onClick = { onTaskClick(task.id) }
+                                    )
                                 }
                             }
                             "Événements" -> {
                                 items(items as List<Event>) { event ->
-                                    EventItemCompact(event = event)
+                                    EventItemCompact(
+                                        event = event,
+                                        onClick = { onEventClick(event.id) }
+                                    )
                                 }
                             }
                             "Notes" -> {
@@ -249,7 +257,10 @@ fun HomeScreen(
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         todayTasks.forEach { task ->
-                            TaskItemCompact(task = task)
+                            TaskItemCompact(
+                                task = task,
+                                onClick = { onTaskClick(task.id) }
+                            )
                         }
                     }
                 }
@@ -266,7 +277,10 @@ fun HomeScreen(
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         events.forEach { event ->
-                            EventItemCompact(event = event)
+                            EventItemCompact(
+                                event = event,
+                                onClick = { onEventClick(event.id) }
+                            )
                         }
                     }
                 }
@@ -346,9 +360,14 @@ fun SectionCard(
  * Item de tâche compact pour le dashboard
  */
 @Composable
-fun TaskItemCompact(task: Task) {
+fun TaskItemCompact(
+    task: Task,
+    onClick: () -> Unit = {}
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Checkbox
@@ -371,9 +390,14 @@ fun TaskItemCompact(task: Task) {
  * Item d'événement compact pour le dashboard
  */
 @Composable
-fun EventItemCompact(event: Event) {
+fun EventItemCompact(
+    event: Event,
+    onClick: () -> Unit = {}
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface

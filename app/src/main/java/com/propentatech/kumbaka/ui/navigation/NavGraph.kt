@@ -56,6 +56,12 @@ fun NavGraph(
                         restoreState = true
                     }
                 },
+                onTaskClick = { taskId ->
+                    navController.navigate(Screen.TaskEditor.createRoute(taskId))
+                },
+                onEventClick = { eventId ->
+                    navController.navigate(Screen.EventEditor.createRoute(eventId))
+                },
                 onNoteClick = { noteId ->
                     navController.navigate(Screen.NoteEditor.createRoute(noteId))
                 }
