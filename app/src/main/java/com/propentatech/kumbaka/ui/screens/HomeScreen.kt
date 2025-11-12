@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -80,35 +82,91 @@ fun HomeScreen(
     // Observer les notes depuis la base de données
     val allNotes by noteViewModel.notes.collectAsState()
     val notes = allNotes.sortedByDescending { it.updatedAt }.take(4)
+    
+    // État de la recherche
+    var isSearching by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    
+    // Résultats de recherche
+    val searchResults = remember(searchQuery, allTasks, allEvents, allNotes) {
+        if (searchQuery.isBlank()) {
+            emptyMap()
+        } else {
+            mapOf(
+                "Tâches" to allTasks.filter { task ->
+                    task.title.contains(searchQuery, ignoreCase = true) ||
+                    task.description.contains(searchQuery, ignoreCase = true)
+                },
+                "Événements" to allEvents.filter { event ->
+                    event.title.contains(searchQuery, ignoreCase = true) ||
+                    event.description.contains(searchQuery, ignoreCase = true) ||
+                    event.location.contains(searchQuery, ignoreCase = true)
+                },
+                "Notes" to allNotes.filter { note ->
+                    note.title.contains(searchQuery, ignoreCase = true) ||
+                    note.content.contains(searchQuery, ignoreCase = true) ||
+                    note.links.any { it.contains(searchQuery, ignoreCase = true) }
+                }
+            ).filterValues { it.isNotEmpty() }
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { },
-                navigationIcon = {
-                    Row(
-                        modifier = Modifier.padding(start = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Logo de l'application
-                        Image(
-                            painter = painterResource(id = R.drawable.logo),
-                            contentDescription = "Logo Temo",
-                            modifier = Modifier
-                                .size(60.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                        )
-                        // Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Temo",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                title = {
+                    if (isSearching) {
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Rechercher...") },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                                unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent
+                            )
                         )
                     }
                 },
+                navigationIcon = {
+                    if (!isSearching) {
+                        Row(
+                            modifier = Modifier.padding(start = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Logo de l'application
+                            Image(
+                                painter = painterResource(id = R.drawable.logo),
+                                contentDescription = "Logo Temo",
+                                modifier = Modifier
+                                    .size(60.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                            )
+                            // Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Temo",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = {
+                            isSearching = false
+                            searchQuery = ""
+                        }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
+                        }
+                    }
+                },
                 actions = {
-                    IconButton(onClick = { /* TODO: Recherche */ }) {
-                        Icon(Icons.Default.Search, contentDescription = "Rechercher")
+                    IconButton(onClick = { isSearching = !isSearching }) {
+                        Icon(
+                            if (isSearching) Icons.Default.Close else Icons.Default.Search,
+                            contentDescription = if (isSearching) "Fermer" else "Rechercher"
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -125,8 +183,66 @@ fun HomeScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Section Tâches du jour
-            item {
+            // Affichage des résultats de recherche
+            if (isSearching && searchQuery.isNotBlank()) {
+                if (searchResults.isEmpty()) {
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Aucun résultat trouvé",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Essayez avec d'autres mots-clés",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    searchResults.forEach { (category, items) ->
+                        item {
+                            Text(
+                                text = category,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
+                        
+                        when (category) {
+                            "Tâches" -> {
+                                items(items as List<Task>) { task ->
+                                    TaskItemCompact(task = task)
+                                }
+                            }
+                            "Événements" -> {
+                                items(items as List<Event>) { event ->
+                                    EventItemCompact(event = event)
+                                }
+                            }
+                            "Notes" -> {
+                                items(items as List<Note>) { note ->
+                                    NoteItemCompact(
+                                        note = note,
+                                        onClick = { onNoteClick(note.id) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Contenu normal de la page d'accueil
+                // Section Tâches du jour
+                item {
                 SectionCard(
                     title = "Mes tâches du jour",
                     onSeeAllClick = onNavigateToTasks
@@ -176,6 +292,7 @@ fun HomeScreen(
                         }
                     }
                 }
+            }
             }
         }
     }
@@ -338,6 +455,55 @@ fun NoteCardCompact(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 3
             )
+        }
+    }
+}
+
+/**
+ * Item de note compact pour les résultats de recherche
+ */
+@Composable
+fun NoteItemCompact(
+    note: Note,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Text(
+                text = note.title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            if (note.content.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = note.content,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2
+                )
+            }
+            if (note.links.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "🔗 ${note.links.size} lien(s)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
