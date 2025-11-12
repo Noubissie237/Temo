@@ -10,9 +10,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -268,8 +267,9 @@ fun HomeScreen(
                 ) {
                     if (todayTasks.isEmpty()) {
                         EmptyStateMessage(
-                            message = "Aucune tâche pour à faire",
-                            subtitle = "Profitez de votre journée, ou ajoutez une tâche "
+                            message = "Aucune tâche à faire",
+                            subtitle = "Profitez de votre journée, ou ajoutez une tâche",
+                            icon = Icons.Outlined.CheckCircle
                         )
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -296,7 +296,8 @@ fun HomeScreen(
                     if (events.isEmpty()) {
                         EmptyStateMessage(
                             message = "Aucun événement prévu",
-                            subtitle = "Créez votre premier événement"
+                            subtitle = "Créez votre premier événement",
+                            icon = Icons.Outlined.DateRange
                         )
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -323,7 +324,8 @@ fun HomeScreen(
                     if (notes.isEmpty()) {
                         EmptyStateMessage(
                             message = "Aucune note",
-                            subtitle = "Commencez à prendre des notes"
+                            subtitle = "Commencez à prendre des notes",
+                            icon = Icons.Outlined.Edit
                         )
                     } else {
                         LazyRow(

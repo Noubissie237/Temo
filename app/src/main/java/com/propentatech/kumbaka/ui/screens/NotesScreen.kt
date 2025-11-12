@@ -8,9 +8,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -118,6 +117,7 @@ fun NotesScreen(
                     EmptyStateMessage(
                         message = if (searchQuery.isEmpty()) "Aucune note" else "Aucun résultat",
                         subtitle = if (searchQuery.isEmpty()) "Créez votre première note" else "Essayez avec d'autres mots-clés",
+                        icon = if (searchQuery.isEmpty()) Icons.Outlined.Edit else Icons.Outlined.Search,
                         modifier = Modifier.padding(top = 48.dp)
                     )
                 }

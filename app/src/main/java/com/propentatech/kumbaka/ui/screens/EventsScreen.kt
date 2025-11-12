@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -96,6 +96,7 @@ fun EventsScreen(
                     EmptyStateMessage(
                         message = "Aucun événement",
                         subtitle = "Créez votre premier événement",
+                        icon = Icons.Outlined.DateRange,
                         modifier = Modifier.padding(top = 48.dp)
                     )
                 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -132,6 +133,7 @@ fun TasksScreen(
                     EmptyStateMessage(
                         message = "Aucune tâche",
                         subtitle = "Créez votre première tâche pour commencer",
+                        icon = Icons.Outlined.CheckCircle,
                         modifier = Modifier.padding(top = 48.dp)
                     )
                 }
