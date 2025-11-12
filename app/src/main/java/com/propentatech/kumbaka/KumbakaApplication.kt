@@ -3,6 +3,7 @@ package com.propentatech.kumbaka
 import android.app.Application
 import com.propentatech.kumbaka.data.MockData
 import com.propentatech.kumbaka.data.database.KumbakaDatabase
+import com.propentatech.kumbaka.data.preferences.ThemePreferences
 import com.propentatech.kumbaka.data.repository.EventRepository
 import com.propentatech.kumbaka.data.repository.NoteRepository
 import com.propentatech.kumbaka.data.repository.TaskRepository
@@ -22,6 +23,9 @@ class KumbakaApplication : Application() {
     
     // Base de données
     val database by lazy { KumbakaDatabase.getInstance(this) }
+    
+    // Préférences
+    val themePreferences by lazy { ThemePreferences(this) }
     
     // Repositories
     val taskRepository by lazy { TaskRepository(database.taskDao()) }

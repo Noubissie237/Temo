@@ -15,9 +15,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.propentatech.kumbaka.KumbakaApplication
 import com.propentatech.kumbaka.ui.theme.*
+import com.propentatech.kumbaka.ui.viewmodel.ThemeViewModel
+import com.propentatech.kumbaka.ui.viewmodel.ThemeViewModelFactory
 
 /**
  * Écran des paramètres
@@ -28,7 +33,15 @@ import com.propentatech.kumbaka.ui.theme.*
 fun SettingsScreen(
     onNavigateBack: () -> Unit = {}
 ) {
-    var darkModeEnabled by remember { mutableStateOf(false) }
+    // Récupérer le ThemeViewModel
+    val context = LocalContext.current
+    val application = context.applicationContext as KumbakaApplication
+    val themeViewModel: ThemeViewModel = viewModel(
+        factory = ThemeViewModelFactory(application.themePreferences)
+    )
+    
+    // Observer l'état du mode sombre
+    val darkModeEnabled by themeViewModel.isDarkMode.collectAsState()
     var notificationsEnabled by remember { mutableStateOf(true) }
 
     Scaffold(
@@ -92,19 +105,9 @@ fun SettingsScreen(
                         iconBackground = AccentLightBlue,
                         title = "Mode sombre",
                         isChecked = darkModeEnabled,
-                        onCheckedChange = { darkModeEnabled = it }
+                        onCheckedChange = { themeViewModel.toggleDarkMode(it) }
                     )
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    SettingsItem(
-                        icon = Icons.Default.Edit,
-                        iconTint = MaterialTheme.colorScheme.primary,
-                        iconBackground = AccentLightBlue,
-                        title = "Couleur d'accentuation",
-                        subtitle = "Bleu dynamique",
-                        onClick = { /* TODO: Changer couleur */ }
-                    )
+                
                 }
             }
 
@@ -130,7 +133,7 @@ fun SettingsScreen(
                         iconTint = MaterialTheme.colorScheme.primary,
                         iconBackground = AccentLightBlue,
                         title = "Version de l'application",
-                        subtitle = "1.2.3",
+                        subtitle = "1.0.0",
                         onClick = { }
                     )
                 }

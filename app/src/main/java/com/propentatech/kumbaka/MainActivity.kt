@@ -8,14 +8,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.propentatech.kumbaka.ui.components.BottomNavBar
 import com.propentatech.kumbaka.ui.navigation.NavGraph
 import com.propentatech.kumbaka.ui.navigation.Screen
 import com.propentatech.kumbaka.ui.theme.KumbakaTheme
+import com.propentatech.kumbaka.ui.viewmodel.ThemeViewModel
+import com.propentatech.kumbaka.ui.viewmodel.ThemeViewModelFactory
+import com.propentatech.kumbaka.data.preferences.ThemePreferences
 
 /**
  * Activité principale de l'application Kumbaka
@@ -26,9 +32,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            KumbakaTheme {
-                KumbakaApp()
-            }
+            KumbakaApp()
         }
     }
 }
@@ -39,6 +43,16 @@ class MainActivity : ComponentActivity() {
  */
 @Composable
 fun KumbakaApp() {
+    // Récupérer le ThemeViewModel
+    val context = LocalContext.current
+    val application = context.applicationContext as KumbakaApplication
+    val themeViewModel: ThemeViewModel = viewModel(
+        factory = ThemeViewModelFactory(application.themePreferences)
+    )
+    
+    // Observer l'état du mode sombre
+    val isDarkMode by themeViewModel.isDarkMode.collectAsState()
+    
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -55,18 +69,20 @@ fun KumbakaApp() {
     // Afficher la barre de navigation seulement sur les écrans principaux
     val showBottomBar = currentRoute in bottomNavRoutes
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        bottomBar = {
-            if (showBottomBar) {
-                BottomNavBar(navController = navController)
+    KumbakaTheme(darkTheme = isDarkMode) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            bottomBar = {
+                if (showBottomBar) {
+                    BottomNavBar(navController = navController)
+                }
             }
+        ) { paddingValues ->
+            NavGraph(
+                navController = navController,
+                startDestination = Screen.Home.route,
+                paddingValues = paddingValues
+            )
         }
-    ) { paddingValues ->
-        NavGraph(
-            navController = navController,
-            startDestination = Screen.Home.route,
-            paddingValues = paddingValues
-        )
     }
 }
