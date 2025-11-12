@@ -112,20 +112,6 @@ fun SettingsScreen(
                 }
             }
 
-            // Section NOTIFICATIONS
-            item {
-                SettingsSection(title = "NOTIFICATIONS") {
-                    SettingsItemWithSwitch(
-                        icon = Icons.Default.Notifications,
-                        iconTint = MaterialTheme.colorScheme.primary,
-                        iconBackground = AccentLightBlue,
-                        title = "Activer les rappels",
-                        isChecked = notificationsEnabled,
-                        onCheckedChange = { notificationsEnabled = it }
-                    )
-                }
-            }
-
             // Section À PROPOS
             item {
                 SettingsSection(title = "À PROPOS") {
