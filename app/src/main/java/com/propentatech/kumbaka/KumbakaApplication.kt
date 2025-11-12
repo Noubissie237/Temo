@@ -4,6 +4,7 @@ import android.app.Application
 import com.propentatech.kumbaka.data.MockData
 import com.propentatech.kumbaka.data.database.KumbakaDatabase
 import com.propentatech.kumbaka.data.manager.DataExportImportManager
+import com.propentatech.kumbaka.data.manager.TaskResetManager
 import com.propentatech.kumbaka.data.preferences.ThemePreferences
 import com.propentatech.kumbaka.data.repository.EventRepository
 import com.propentatech.kumbaka.data.repository.NoteRepository
@@ -37,11 +38,18 @@ class KumbakaApplication : Application() {
     val dataExportImportManager by lazy { 
         DataExportImportManager(this, taskRepository, noteRepository, eventRepository) 
     }
+    
+    // Task Reset Manager
+    val taskResetManager by lazy {
+        TaskResetManager(this, taskRepository)
+    }
 
     override fun onCreate() {
         super.onCreate()
         
-        // La base de données est maintenant vide au démarrage
-        // Les utilisateurs créeront leurs propres tâches
+        // Vérifier et réinitialiser les tâches au démarrage
+        applicationScope.launch {
+            taskResetManager.checkAndResetTasks()
+        }
     }
 }

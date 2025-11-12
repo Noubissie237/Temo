@@ -35,6 +35,7 @@ import com.propentatech.kumbaka.ui.viewmodel.NoteViewModel
 import com.propentatech.kumbaka.ui.viewmodel.NoteViewModelFactory
 import com.propentatech.kumbaka.ui.viewmodel.TaskViewModel
 import com.propentatech.kumbaka.ui.viewmodel.TaskViewModelFactory
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -58,6 +59,14 @@ fun HomeScreen(
     val taskViewModel: TaskViewModel = viewModel(
         factory = TaskViewModelFactory(application.taskRepository)
     )
+    
+    // Vérifier et réinitialiser les tâches au chargement de l'écran
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(Unit) {
+        scope.launch {
+            application.taskResetManager.checkAndResetTasks()
+        }
+    }
     
     // Observer les tâches depuis la base de données
     val allTasks by taskViewModel.tasks.collectAsState()
