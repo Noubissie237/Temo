@@ -19,6 +19,11 @@ class TaskRepository(private val taskDao: TaskDao) {
     val tasks: Flow<List<Task>> = taskDao.getAllTasks()
 
     /**
+     * Récupère toutes les tâches (pour export)
+     */
+    fun getAllTasks(): Flow<List<Task>> = taskDao.getAllTasks()
+
+    /**
      * Ajoute une nouvelle tâche
      */
     suspend fun addTask(task: Task) {
@@ -71,5 +76,12 @@ class TaskRepository(private val taskDao: TaskDao) {
         }
         
         taskDao.updateTask(updatedTask)
+    }
+    
+    /**
+     * Supprime toutes les tâches
+     */
+    suspend fun deleteAllTasks() {
+        taskDao.deleteAllTasks()
     }
 }

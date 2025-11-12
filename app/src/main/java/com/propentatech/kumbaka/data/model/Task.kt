@@ -2,6 +2,10 @@ package com.propentatech.kumbaka.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.propentatech.kumbaka.data.serializers.DayOfWeekListSerializer
+import com.propentatech.kumbaka.data.serializers.LocalDateSerializer
+import com.propentatech.kumbaka.data.serializers.LocalDateTimeSerializer
+import kotlinx.serialization.Serializable
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -11,6 +15,7 @@ import java.util.UUID
  * Modèle de données pour une tâche
  * Entité Room pour la persistance en base de données
  */
+@Serializable
 @Entity(tableName = "tasks")
 data class Task(
     @PrimaryKey
@@ -18,12 +23,17 @@ data class Task(
     val title: String,
     val description: String = "",
     val type: TaskType = TaskType.OCCASIONAL,
+    @Serializable(with = LocalDateSerializer::class)
     val specificDate: LocalDate? = null, // Pour les tâches occasionnelles
+    @Serializable(with = DayOfWeekListSerializer::class)
     val selectedDays: List<DayOfWeek> = emptyList(), // Pour les tâches périodiques
     val priority: TaskPriority = TaskPriority.MEDIUM,
     val isCompleted: Boolean = false,
+    @Serializable(with = LocalDateSerializer::class)
     val lastCompletedDate: LocalDate? = null, // Pour savoir quand elle a été complétée
+    @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime = LocalDateTime.now(),
+    @Serializable(with = LocalDateTimeSerializer::class)
     val updatedAt: LocalDateTime = LocalDateTime.now()
 )
 

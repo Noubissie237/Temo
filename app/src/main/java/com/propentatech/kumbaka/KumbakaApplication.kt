@@ -3,6 +3,7 @@ package com.propentatech.kumbaka
 import android.app.Application
 import com.propentatech.kumbaka.data.MockData
 import com.propentatech.kumbaka.data.database.KumbakaDatabase
+import com.propentatech.kumbaka.data.manager.DataExportImportManager
 import com.propentatech.kumbaka.data.preferences.ThemePreferences
 import com.propentatech.kumbaka.data.repository.EventRepository
 import com.propentatech.kumbaka.data.repository.NoteRepository
@@ -31,6 +32,11 @@ class KumbakaApplication : Application() {
     val taskRepository by lazy { TaskRepository(database.taskDao()) }
     val eventRepository by lazy { EventRepository(database.eventDao()) }
     val noteRepository by lazy { NoteRepository(database.noteDao()) }
+    
+    // Data Manager
+    val dataExportImportManager by lazy { 
+        DataExportImportManager(this, taskRepository, noteRepository, eventRepository) 
+    }
 
     override fun onCreate() {
         super.onCreate()

@@ -16,6 +16,11 @@ class NoteRepository(private val noteDao: NoteDao) {
     val notes: Flow<List<Note>> = noteDao.getAllNotes()
 
     /**
+     * Récupère toutes les notes (pour export)
+     */
+    fun getAllNotes(): Flow<List<Note>> = noteDao.getAllNotes()
+
+    /**
      * Ajoute une nouvelle note
      */
     suspend fun addNote(note: Note) {
@@ -48,5 +53,12 @@ class NoteRepository(private val noteDao: NoteDao) {
      */
     fun searchNotes(query: String): Flow<List<Note>> {
         return noteDao.searchNotes(query)
+    }
+    
+    /**
+     * Supprime toutes les notes
+     */
+    suspend fun deleteAllNotes() {
+        noteDao.deleteAllNotes()
     }
 }

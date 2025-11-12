@@ -1,5 +1,8 @@
 package com.propentatech.kumbaka.ui.screens
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,9 +23,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.propentatech.kumbaka.KumbakaApplication
+import com.propentatech.kumbaka.data.manager.ExportData
 import com.propentatech.kumbaka.ui.theme.*
 import com.propentatech.kumbaka.ui.viewmodel.ThemeViewModel
 import com.propentatech.kumbaka.ui.viewmodel.ThemeViewModelFactory
+import kotlinx.coroutines.launch
 
 /**
  * Écran des paramètres
@@ -42,7 +47,36 @@ fun SettingsScreen(
     
     // Observer l'état du mode sombre
     val darkModeEnabled by themeViewModel.isDarkMode.collectAsState()
-    var notificationsEnabled by remember { mutableStateOf(true) }
+    
+    // États pour les dialogues
+    var showExportDialog by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var exportUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var importUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    
+    val scope = rememberCoroutineScope()
+    val dataManager = application.dataExportImportManager
+    
+    // Launcher pour créer un fichier (export)
+    val createFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            exportUri = it
+            showExportDialog = true
+        }
+    }
+    
+    // Launcher pour ouvrir un fichier (import)
+    val openFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            importUri = it
+            showImportDialog = true
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -82,7 +116,10 @@ fun SettingsScreen(
                         iconTint = MaterialTheme.colorScheme.primary,
                         iconBackground = AccentLightBlue,
                         title = "Exporter les données",
-                        onClick = { /* TODO: Export */ }
+                        subtitle = "Sauvegarder vos données",
+                        onClick = { 
+                            createFileLauncher.launch(dataManager.generateExportFileName())
+                        }
                     )
                     
                     Spacer(modifier = Modifier.height(12.dp))
@@ -92,7 +129,21 @@ fun SettingsScreen(
                         iconTint = MaterialTheme.colorScheme.primary,
                         iconBackground = AccentLightBlue,
                         title = "Importer les données",
-                        onClick = { /* TODO: Import */ }
+                        subtitle = "Restaurer vos données",
+                        onClick = { 
+                            openFileLauncher.launch(arrayOf("application/json"))
+                        }
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    SettingsItem(
+                        icon = Icons.Default.Delete,
+                        iconTint = MaterialTheme.colorScheme.error,
+                        iconBackground = MaterialTheme.colorScheme.errorContainer,
+                        title = "Supprimer toutes les données",
+                        subtitle = "Action irréversible",
+                        onClick = { showDeleteDialog = true }
                     )
                 }
             }
@@ -127,6 +178,356 @@ fun SettingsScreen(
             }
         }
     }
+    
+    // Dialogues Export/Import/Delete
+    if (showExportDialog && exportUri != null) {
+        ExportDataDialog(
+            onDismiss = { showExportDialog = false },
+            onExport = { exportData ->
+                showExportDialog = false
+                scope.launch {
+                    try {
+                        context.contentResolver.openOutputStream(exportUri!!)?.use { outputStream ->
+                            val result = dataManager.exportData(outputStream, exportData)
+                            result.onSuccess { message ->
+                                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                            }.onFailure { error ->
+                                Toast.makeText(context, "Erreur: ${error.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Erreur: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        )
+    }
+    
+    if (showImportDialog && importUri != null) {
+        ImportDataDialog(
+            onDismiss = { showImportDialog = false },
+            onImport = { importData ->
+                showImportDialog = false
+                scope.launch {
+                    try {
+                        context.contentResolver.openInputStream(importUri!!)?.use { inputStream ->
+                            val result = dataManager.importData(inputStream, importData)
+                            result.onSuccess { message ->
+                                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                            }.onFailure { error ->
+                                Toast.makeText(context, "Erreur: ${error.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Erreur: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        )
+    }
+    
+    if (showDeleteDialog) {
+        DeleteAllDataDialog(
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = {
+                scope.launch {
+                    application.taskRepository.deleteAllTasks()
+                    application.noteRepository.deleteAllNotes()
+                    application.eventRepository.deleteAllEvents()
+                    Toast.makeText(context, "Toutes les données ont été supprimées", Toast.LENGTH_SHORT).show()
+                }
+                showDeleteDialog = false
+            }
+        )
+    }
+}
+
+/**
+ * Dialogue de sélection des données à exporter
+ */
+@Composable
+fun ExportDataDialog(
+    onDismiss: () -> Unit,
+    onExport: (ExportData) -> Unit
+) {
+    var includeTasks by remember { mutableStateOf(true) }
+    var includeNotes by remember { mutableStateOf(true) }
+    var includeEvents by remember { mutableStateOf(true) }
+    
+    val isValid = includeTasks || includeNotes || includeEvents
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Exporter les données",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Sélectionnez les données à exporter :",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                
+                // Checkbox Tâches
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { includeTasks = !includeTasks }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = includeTasks,
+                        onCheckedChange = { includeTasks = it }
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Tâches",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+                
+                // Checkbox Notes
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { includeNotes = !includeNotes }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = includeNotes,
+                        onCheckedChange = { includeNotes = it }
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Notes",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+                
+                // Checkbox Événements
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { includeEvents = !includeEvents }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = includeEvents,
+                        onCheckedChange = { includeEvents = it }
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Événements",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+                
+                if (!isValid) {
+                    Text(
+                        text = "Sélectionnez au moins une option",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onExport(ExportData(includeTasks, includeNotes, includeEvents))
+                },
+                enabled = isValid
+            ) {
+                Text("Exporter")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annuler")
+            }
+        }
+    )
+}
+
+/**
+ * Dialogue de sélection des données à importer
+ */
+@Composable
+fun ImportDataDialog(
+    onDismiss: () -> Unit,
+    onImport: (ExportData) -> Unit
+) {
+    var includeTasks by remember { mutableStateOf(true) }
+    var includeNotes by remember { mutableStateOf(true) }
+    var includeEvents by remember { mutableStateOf(true) }
+    
+    val isValid = includeTasks || includeNotes || includeEvents
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Importer les données",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Sélectionnez les données à importer :",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                
+                Text(
+                    text = "Les données seront fusionnées avec vos données existantes.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                // Checkbox Tâches
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { includeTasks = !includeTasks }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = includeTasks,
+                        onCheckedChange = { includeTasks = it }
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Tâches",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+                
+                // Checkbox Notes
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { includeNotes = !includeNotes }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = includeNotes,
+                        onCheckedChange = { includeNotes = it }
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Notes",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+                
+                // Checkbox Événements
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { includeEvents = !includeEvents }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = includeEvents,
+                        onCheckedChange = { includeEvents = it }
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Événements",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+                
+                if (!isValid) {
+                    Text(
+                        text = "Sélectionnez au moins une option",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onImport(ExportData(includeTasks, includeNotes, includeEvents))
+                },
+                enabled = isValid
+            ) {
+                Text("Importer")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annuler")
+            }
+        }
+    )
+}
+
+/**
+ * Dialogue de confirmation de suppression de toutes les données
+ */
+@Composable
+fun DeleteAllDataDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                Icons.Default.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error
+            )
+        },
+        title = {
+            Text(
+                text = "Supprimer toutes les données ?",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Text(
+                text = "Cette action supprimera définitivement toutes vos tâches, notes et événements. Cette action est irréversible.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("Supprimer tout")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annuler")
+            }
+        }
+    )
 }
 
 /**

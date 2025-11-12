@@ -17,6 +17,11 @@ class EventRepository(private val eventDao: EventDao) {
     val events: Flow<List<Event>> = eventDao.getAllEvents()
 
     /**
+     * Récupère tous les événements (pour export)
+     */
+    fun getAllEvents(): Flow<List<Event>> = eventDao.getAllEvents()
+
+    /**
      * Ajoute un nouvel événement
      */
     suspend fun addEvent(event: Event) {
@@ -50,5 +55,12 @@ class EventRepository(private val eventDao: EventDao) {
     fun getUpcomingEvents(): Flow<List<Event>> {
         val today = LocalDate.now().toString()
         return eventDao.getUpcomingEvents(today)
+    }
+    
+    /**
+     * Supprime tous les événements
+     */
+    suspend fun deleteAllEvents() {
+        eventDao.deleteAllEvents()
     }
 }
