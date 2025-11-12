@@ -94,11 +94,6 @@ fun TasksScreen(
                         fontWeight = FontWeight.Bold
                     )
                 },
-                actions = {
-                    IconButton(onClick = { /* TODO: Filtres */ }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Options")
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 ),
