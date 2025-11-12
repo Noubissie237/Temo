@@ -54,6 +54,8 @@ fun EventEditorScreen(
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
     
     val isEditMode = eventId != null
     
@@ -170,11 +172,11 @@ fun EventEditorScreen(
                 }
             }
 
-            // Description
+            // Description (optionnelle)
             item {
                 Column {
                     Text(
-                        text = "Description",
+                        text = "Description (optionnelle)",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -244,7 +246,7 @@ fun EventEditorScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { /* TODO: Ouvrir date picker */ }
+                                .clickable { showDatePicker = true }
                                 .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -295,8 +297,10 @@ fun EventEditorScreen(
                     )
                     OutlinedTextField(
                         value = selectedTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "",
-                        onValueChange = { /* TODO: Time picker */ },
-                        modifier = Modifier.fillMaxWidth(),
+                        onValueChange = { },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showTimePicker = true },
                         placeholder = { Text("Ajouter une heure...") },
                         leadingIcon = {
                             Icon(
@@ -305,16 +309,52 @@ fun EventEditorScreen(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         },
+                        trailingIcon = {
+                            if (selectedTime != null) {
+                                IconButton(onClick = { selectedTime = null }) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Supprimer l'heure",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        },
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface
                         ),
-                        readOnly = true
+                        readOnly = true,
+                        enabled = false
                     )
                 }
             }
         }
+    }
+    
+    // Dialogue de sélection de date
+    if (showDatePicker) {
+        DatePickerDialog(
+            selectedDate = selectedDate,
+            onDateSelected = { date ->
+                selectedDate = date
+                showDatePicker = false
+            },
+            onDismiss = { showDatePicker = false }
+        )
+    }
+    
+    // Dialogue de sélection d'heure
+    if (showTimePicker) {
+        TimePickerDialog(
+            selectedTime = selectedTime,
+            onTimeSelected = { time ->
+                selectedTime = time
+                showTimePicker = false
+            },
+            onDismiss = { showTimePicker = false }
+        )
     }
     
     // Dialogue de suppression
@@ -340,6 +380,148 @@ fun EventEditorScreen(
             }
         )
     }
+}
+
+/**
+ * Dialogue de sélection de date
+ */
+@Composable
+fun DatePickerDialog(
+    selectedDate: LocalDate,
+    onDateSelected: (LocalDate) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var tempYear by remember { mutableStateOf(selectedDate.year) }
+    var tempMonth by remember { mutableStateOf(selectedDate.monthValue) }
+    var tempDay by remember { mutableStateOf(selectedDate.dayOfMonth) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Sélectionner une date") },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Année
+                OutlinedTextField(
+                    value = tempYear.toString(),
+                    onValueChange = { 
+                        it.toIntOrNull()?.let { year -> tempYear = year }
+                    },
+                    label = { Text("Année") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                // Mois
+                OutlinedTextField(
+                    value = tempMonth.toString(),
+                    onValueChange = { 
+                        it.toIntOrNull()?.let { month -> 
+                            if (month in 1..12) tempMonth = month 
+                        }
+                    },
+                    label = { Text("Mois (1-12)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                // Jour
+                OutlinedTextField(
+                    value = tempDay.toString(),
+                    onValueChange = { 
+                        it.toIntOrNull()?.let { day -> 
+                            if (day in 1..31) tempDay = day 
+                        }
+                    },
+                    label = { Text("Jour (1-31)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    try {
+                        val newDate = LocalDate.of(tempYear, tempMonth, tempDay)
+                        onDateSelected(newDate)
+                    } catch (e: Exception) {
+                        // Date invalide, ne rien faire
+                    }
+                }
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annuler")
+            }
+        }
+    )
+}
+
+/**
+ * Dialogue de sélection d'heure
+ */
+@Composable
+fun TimePickerDialog(
+    selectedTime: LocalTime?,
+    onTimeSelected: (LocalTime) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var tempHour by remember { mutableStateOf(selectedTime?.hour ?: 12) }
+    var tempMinute by remember { mutableStateOf(selectedTime?.minute ?: 0) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Sélectionner une heure") },
+        text = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Heure
+                OutlinedTextField(
+                    value = tempHour.toString().padStart(2, '0'),
+                    onValueChange = { 
+                        it.toIntOrNull()?.let { hour -> 
+                            if (hour in 0..23) tempHour = hour 
+                        }
+                    },
+                    label = { Text("HH") },
+                    modifier = Modifier.weight(1f)
+                )
+                
+                Text(":", style = MaterialTheme.typography.headlineMedium)
+                
+                // Minutes
+                OutlinedTextField(
+                    value = tempMinute.toString().padStart(2, '0'),
+                    onValueChange = { 
+                        it.toIntOrNull()?.let { minute -> 
+                            if (minute in 0..59) tempMinute = minute 
+                        }
+                    },
+                    label = { Text("MM") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val newTime = LocalTime.of(tempHour, tempMinute)
+                    onTimeSelected(newTime)
+                }
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annuler")
+            }
+        }
+    )
 }
 
 /**

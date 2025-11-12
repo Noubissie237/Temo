@@ -8,8 +8,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -60,14 +60,7 @@ fun EventsScreen(
                         fontWeight = FontWeight.Bold
                     )
                 },
-                actions = {
-                    IconButton(onClick = onNavigateToCalendar) {
-                        Icon(
-                            Icons.Default.DateRange,
-                            contentDescription = "Voir le calendrier"
-                        )
-                    }
-                },
+
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
@@ -106,7 +99,7 @@ fun EventsScreen(
 }
 
 /**
- * Item d'événement dans la liste
+ * Item d'événement dans la liste - Affichage amélioré
  */
 @Composable
 fun EventListItem(
@@ -123,50 +116,105 @@ fun EventListItem(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            // En-tête : Titre + Badge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                // Titre
                 Text(
                     text = event.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
                 )
                 
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                // Badge de compte à rebours
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = AccentLightPurple
+                ) {
+                    Text(
+                        text = event.getCountdownLabel(),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = SecondaryPurple,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+            
+            // Description (si elle existe)
+            if (event.description.isNotBlank()) {
+                Text(
+                    text = event.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    maxLines = 2
+                )
+            }
+            
+            // Informations : Date, heure et lieu
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Date et heure
                 Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Icon(
+                        Icons.Default.DateRange,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                     event.time?.let { time ->
                         Text(
-                            text = "${event.date.format(DateTimeFormatter.ofPattern("dd MMM"))} • ${time.format(DateTimeFormatter.ofPattern("HH:mm"))}",
+                            text = "${event.date.format(DateTimeFormatter.ofPattern("dd MMM yyyy"))} • ${time.format(DateTimeFormatter.ofPattern("HH:mm"))}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
                         )
                     } ?: run {
                         Text(
                             text = event.date.format(DateTimeFormatter.ofPattern("dd MMM yyyy")),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
-            }
-
-            // Badge de compte à rebours
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = AccentLightPurple
-            ) {
-                Text(
-                    text = event.getCountdownLabel(),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = SecondaryPurple,
-                    fontWeight = FontWeight.Medium
-                )
+                
+                // Lieu (si il existe)
+                if (event.location.isNotBlank()) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.LocationOn,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = event.location,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
         }
     }
