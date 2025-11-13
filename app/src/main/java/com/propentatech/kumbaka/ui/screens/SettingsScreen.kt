@@ -142,7 +142,7 @@ fun SettingsScreen(
                     SettingsItem(
                         icon = Icons.Default.Share,
                         iconTint = MaterialTheme.colorScheme.primary,
-                        iconBackground = AccentLightBlue,
+                        iconBackground = MaterialTheme.colorScheme.primaryContainer,
                         title = "Exporter les données",
                         subtitle = "Sauvegarder vos données",
                         onClick = { 
@@ -155,7 +155,7 @@ fun SettingsScreen(
                     SettingsItem(
                         icon = Icons.Default.Add,
                         iconTint = MaterialTheme.colorScheme.primary,
-                        iconBackground = AccentLightBlue,
+                        iconBackground = MaterialTheme.colorScheme.primaryContainer,
                         title = "Importer les données",
                         subtitle = "Restaurer vos données",
                         onClick = { 
@@ -168,7 +168,7 @@ fun SettingsScreen(
                     SettingsItem(
                         icon = Icons.Default.Clear,
                         iconTint = MaterialTheme.colorScheme.primary,
-                        iconBackground = AccentLightBlue,
+                        iconBackground = MaterialTheme.colorScheme.primaryContainer,
                         title = "Nettoyer les événements passés",
                         subtitle = "Supprimer les anciens événements",
                         onClick = { showCleanupDialog = true }
@@ -193,7 +193,7 @@ fun SettingsScreen(
                     SettingsItemWithSwitch(
                         icon = Icons.Default.Notifications,
                         iconTint = MaterialTheme.colorScheme.primary,
-                        iconBackground = AccentLightBlue,
+                        iconBackground = MaterialTheme.colorScheme.primaryContainer,
                         title = "Rappels d'événements",
                         subtitle = "Recevoir des notifications pour les événements",
                         isChecked = notificationsEnabled,
@@ -237,7 +237,7 @@ fun SettingsScreen(
                     SettingsItemWithSwitch(
                         icon = Icons.Default.Settings,
                         iconTint = MaterialTheme.colorScheme.primary,
-                        iconBackground = AccentLightBlue,
+                        iconBackground = MaterialTheme.colorScheme.primaryContainer,
                         title = "Mode sombre",
                         isChecked = darkModeEnabled,
                         onCheckedChange = { themeViewModel.toggleDarkMode(it) }
@@ -252,7 +252,7 @@ fun SettingsScreen(
                     SettingsItem(
                         icon = Icons.Default.Info,
                         iconTint = MaterialTheme.colorScheme.primary,
-                        iconBackground = AccentLightBlue,
+                        iconBackground = MaterialTheme.colorScheme.primaryContainer,
                         title = "Version de l'application",
                         subtitle = "1.0.0",
                         onClick = { }
