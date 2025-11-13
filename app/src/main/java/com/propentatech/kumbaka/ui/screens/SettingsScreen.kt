@@ -1,5 +1,10 @@
 package com.propentatech.kumbaka.ui.screens
 
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.propentatech.kumbaka.KumbakaApplication
 import com.propentatech.kumbaka.data.manager.ExportData
+import com.propentatech.kumbaka.notification.NotificationHelper
 import com.propentatech.kumbaka.ui.theme.*
 import com.propentatech.kumbaka.ui.viewmodel.ThemeViewModel
 import com.propentatech.kumbaka.ui.viewmodel.ThemeViewModelFactory
@@ -57,6 +63,27 @@ fun SettingsScreen(
     
     val scope = rememberCoroutineScope()
     val dataManager = application.dataExportImportManager
+    
+    // État pour les notifications
+    var notificationsEnabled by remember { 
+        mutableStateOf(NotificationHelper.areNotificationsEnabled(context)) 
+    }
+    
+    // Launcher pour demander la permission de notifications (Android 13+)
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        notificationsEnabled = isGranted
+        if (isGranted) {
+            Toast.makeText(context, "Notifications activées", Toast.LENGTH_SHORT).show()
+            // Replanifier toutes les notifications
+            scope.launch {
+                application.eventRepository.rescheduleAllNotifications()
+            }
+        } else {
+            Toast.makeText(context, "Permission refusée", Toast.LENGTH_SHORT).show()
+        }
+    }
     
     // Launcher pour créer un fichier (export)
     val createFileLauncher = rememberLauncherForActivityResult(
@@ -145,6 +172,50 @@ fun SettingsScreen(
                         subtitle = "Action irréversible",
                         onClick = { showDeleteDialog = true }
                     )
+                }
+            }
+
+            // Section NOTIFICATIONS
+            item {
+                SettingsSection(title = "NOTIFICATIONS") {
+                    SettingsItemWithSwitch(
+                        icon = Icons.Default.Notifications,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        iconBackground = AccentLightBlue,
+                        title = "Rappels d'événements",
+                        subtitle = "Recevoir des notifications pour les événements",
+                        isChecked = notificationsEnabled,
+                        onCheckedChange = { enabled ->
+                            if (enabled) {
+                                // Demander la permission si Android 13+
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    // Pour les versions antérieures, ouvrir les paramètres système
+                                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                    }
+                                    context.startActivity(intent)
+                                }
+                            } else {
+                                // Ouvrir les paramètres pour désactiver
+                                val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                }
+                                context.startActivity(intent)
+                            }
+                        }
+                    )
+                    
+                    if (notificationsEnabled) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "• Notification 1 jour avant l'événement\n• Notification 5 minutes avant (si heure définie)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 56.dp, end = 16.dp, bottom = 8.dp)
+                        )
+                    }
                 }
             }
 
@@ -632,6 +703,7 @@ fun SettingsItemWithSwitch(
     iconTint: Color,
     iconBackground: Color,
     title: String,
+    subtitle: String? = null,
     isChecked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
@@ -656,12 +728,20 @@ fun SettingsItemWithSwitch(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+            subtitle?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
 
         Switch(
             checked = isChecked,

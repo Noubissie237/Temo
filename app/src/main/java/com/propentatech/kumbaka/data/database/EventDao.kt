@@ -70,4 +70,10 @@ interface EventDao {
      */
     @Query("SELECT COUNT(*) FROM events")
     suspend fun getEventCount(): Int
+    
+    /**
+     * Récupère tous les événements de manière synchrone (pour la planification des notifications)
+     */
+    @Query("SELECT * FROM events ORDER BY date ASC, time ASC")
+    suspend fun getAllEventsSync(): List<Event>
 }

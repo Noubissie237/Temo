@@ -9,6 +9,7 @@ import com.propentatech.kumbaka.data.preferences.ThemePreferences
 import com.propentatech.kumbaka.data.repository.EventRepository
 import com.propentatech.kumbaka.data.repository.NoteRepository
 import com.propentatech.kumbaka.data.repository.TaskRepository
+import com.propentatech.kumbaka.notification.NotificationHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,7 +32,7 @@ class KumbakaApplication : Application() {
     
     // Repositories
     val taskRepository by lazy { TaskRepository(database.taskDao()) }
-    val eventRepository by lazy { EventRepository(database.eventDao()) }
+    val eventRepository by lazy { EventRepository(database.eventDao(), this) }
     val noteRepository by lazy { NoteRepository(database.noteDao()) }
     
     // Data Manager
@@ -47,9 +48,15 @@ class KumbakaApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         
+        // Créer les canaux de notification
+        NotificationHelper.createNotificationChannels(this)
+        
         // Vérifier et réinitialiser les tâches au démarrage
         applicationScope.launch {
             taskResetManager.checkAndResetTasks()
+            
+            // Replanifier toutes les notifications au démarrage
+            eventRepository.rescheduleAllNotifications()
         }
     }
 }
