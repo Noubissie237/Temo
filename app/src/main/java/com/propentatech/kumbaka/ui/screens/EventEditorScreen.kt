@@ -361,6 +361,7 @@ fun EventEditorScreen(
     if (showTimePicker) {
         TimePickerDialog(
             selectedTime = selectedTime,
+            selectedDate = selectedDate,
             onTimeSelected = { time ->
                 selectedTime = time
                 showTimePicker = false
@@ -395,68 +396,38 @@ fun EventEditorScreen(
 }
 
 /**
- * Dialogue de sélection de date
+ * Dialogue de sélection de date avec calendrier Material3
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatePickerDialog(
     selectedDate: LocalDate,
     onDateSelected: (LocalDate) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var tempYear by remember { mutableStateOf(selectedDate.year) }
-    var tempMonth by remember { mutableStateOf(selectedDate.monthValue) }
-    var tempDay by remember { mutableStateOf(selectedDate.dayOfMonth) }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Sélectionner une date") },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Année
-                OutlinedTextField(
-                    value = tempYear.toString(),
-                    onValueChange = { 
-                        it.toIntOrNull()?.let { year -> tempYear = year }
-                    },
-                    label = { Text("Année") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                // Mois
-                OutlinedTextField(
-                    value = tempMonth.toString(),
-                    onValueChange = { 
-                        it.toIntOrNull()?.let { month -> 
-                            if (month in 1..12) tempMonth = month 
-                        }
-                    },
-                    label = { Text("Mois (1-12)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                // Jour
-                OutlinedTextField(
-                    value = tempDay.toString(),
-                    onValueChange = { 
-                        it.toIntOrNull()?.let { day -> 
-                            if (day in 1..31) tempDay = day 
-                        }
-                    },
-                    label = { Text("Jour (1-31)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selectedDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                val date = java.time.Instant.ofEpochMilli(utcTimeMillis)
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDate()
+                // Ne pas permettre de sélectionner une date passée
+                return !date.isBefore(LocalDate.now())
             }
-        },
+        }
+    )
+    
+    androidx.compose.material3.DatePickerDialog(
+        onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(
                 onClick = {
-                    try {
-                        val newDate = LocalDate.of(tempYear, tempMonth, tempDay)
-                        onDateSelected(newDate)
-                    } catch (e: Exception) {
-                        // Date invalide, ne rien faire
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val date = java.time.Instant.ofEpochMilli(millis)
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .toLocalDate()
+                        onDateSelected(date)
                     }
                 }
             ) {
@@ -468,60 +439,54 @@ fun DatePickerDialog(
                 Text("Annuler")
             }
         }
-    )
+    ) {
+        DatePicker(
+            state = datePickerState,
+            title = {
+                Text(
+                    text = "Sélectionner une date",
+                    modifier = Modifier.padding(16.dp)
+                )
+            },
+            showModeToggle = true
+        )
+    }
 }
 
 /**
- * Dialogue de sélection d'heure
+ * Dialogue de sélection d'heure avec TimePicker Material3
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimePickerDialog(
     selectedTime: LocalTime?,
+    selectedDate: LocalDate,
     onTimeSelected: (LocalTime) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var tempHour by remember { mutableStateOf(selectedTime?.hour ?: 12) }
-    var tempMinute by remember { mutableStateOf(selectedTime?.minute ?: 0) }
+    val currentTime = LocalTime.now()
+    val isToday = selectedDate.isEqual(LocalDate.now())
+    var showError by remember { mutableStateOf(false) }
+    
+    val timePickerState = rememberTimePickerState(
+        initialHour = selectedTime?.hour ?: currentTime.hour,
+        initialMinute = selectedTime?.minute ?: currentTime.minute,
+        is24Hour = true
+    )
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Sélectionner une heure") },
-        text = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Heure
-                OutlinedTextField(
-                    value = tempHour.toString().padStart(2, '0'),
-                    onValueChange = { 
-                        it.toIntOrNull()?.let { hour -> 
-                            if (hour in 0..23) tempHour = hour 
-                        }
-                    },
-                    label = { Text("HH") },
-                    modifier = Modifier.weight(1f)
-                )
-                
-                Text(":", style = MaterialTheme.typography.headlineMedium)
-                
-                // Minutes
-                OutlinedTextField(
-                    value = tempMinute.toString().padStart(2, '0'),
-                    onValueChange = { 
-                        it.toIntOrNull()?.let { minute -> 
-                            if (minute in 0..59) tempMinute = minute 
-                        }
-                    },
-                    label = { Text("MM") },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        },
         confirmButton = {
             TextButton(
                 onClick = {
-                    val newTime = LocalTime.of(tempHour, tempMinute)
+                    val newTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
+                    
+                    // Validation: si la date est aujourd'hui, ne pas permettre une heure passée
+                    if (isToday && newTime.isBefore(currentTime)) {
+                        showError = true
+                        return@TextButton
+                    }
+                    
                     onTimeSelected(newTime)
                 }
             ) {
@@ -531,6 +496,31 @@ fun TimePickerDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Annuler")
+            }
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Sélectionner une heure",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                // Afficher un avertissement uniquement si l'utilisateur a tenté de valider une heure passée
+                if (showError) {
+                    Text(
+                        text = "Vous ne pouvez pas sélectionner une heure passée",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                
+                TimePicker(
+                    state = timePickerState
+                )
             }
         }
     )
