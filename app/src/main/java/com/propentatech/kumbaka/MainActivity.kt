@@ -22,6 +22,11 @@ import com.propentatech.kumbaka.ui.theme.KumbakaTheme
 import com.propentatech.kumbaka.ui.viewmodel.ThemeViewModel
 import com.propentatech.kumbaka.ui.viewmodel.ThemeViewModelFactory
 import com.propentatech.kumbaka.data.preferences.ThemePreferences
+import com.propentatech.kumbaka.data.preferences.OnboardingPreferences
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 /**
  * Activité principale de l'application Kumbaka
@@ -53,6 +58,17 @@ fun KumbakaApp() {
     // Observer l'état du mode sombre
     val isDarkMode by themeViewModel.isDarkMode.collectAsState()
     
+    // Vérifier si l'onboarding a été complété
+    val onboardingPreferences = remember { OnboardingPreferences(context) }
+    val isOnboardingCompleted by onboardingPreferences.isOnboardingCompleted.collectAsState(initial = null)
+    
+    // Déterminer la destination de départ
+    val startDestination = when (isOnboardingCompleted) {
+        true -> Screen.Home.route
+        false -> Screen.Onboarding.route
+        null -> null // Attendre que la valeur soit chargée
+    }
+    
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -70,19 +86,22 @@ fun KumbakaApp() {
     val showBottomBar = currentRoute in bottomNavRoutes
 
     KumbakaTheme(darkTheme = isDarkMode) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            bottomBar = {
-                if (showBottomBar) {
-                    BottomNavBar(navController = navController)
+        // Attendre que la destination de départ soit déterminée
+        startDestination?.let { destination ->
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                bottomBar = {
+                    if (showBottomBar) {
+                        BottomNavBar(navController = navController)
+                    }
                 }
+            ) { paddingValues ->
+                NavGraph(
+                    navController = navController,
+                    startDestination = destination,
+                    paddingValues = paddingValues
+                )
             }
-        ) { paddingValues ->
-            NavGraph(
-                navController = navController,
-                startDestination = Screen.Home.route,
-                paddingValues = paddingValues
-            )
         }
     }
 }

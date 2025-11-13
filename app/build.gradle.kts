@@ -63,7 +63,11 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     
     // DataStore Preferences
-    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation(libs.androidx.datastore.preferences)
+    
+    // Accompanist Pager for Onboarding
+    implementation(libs.accompanist.pager)
+    implementation(libs.accompanist.pager.indicators)
     
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")

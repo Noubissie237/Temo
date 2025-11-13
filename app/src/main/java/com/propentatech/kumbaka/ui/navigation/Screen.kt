@@ -5,6 +5,9 @@ package com.propentatech.kumbaka.ui.navigation
  * Utilisé pour la navigation entre les différentes vues
  */
 sealed class Screen(val route: String) {
+    // Écran d'onboarding
+    object Onboarding : Screen("onboarding")
+    
     // Écrans principaux avec navigation en bas
     object Home : Screen("home")
     object Tasks : Screen("tasks")

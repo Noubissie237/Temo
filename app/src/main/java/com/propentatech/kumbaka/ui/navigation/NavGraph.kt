@@ -3,13 +3,17 @@ package com.propentatech.kumbaka.ui.navigation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.propentatech.kumbaka.ui.screens.*
+import com.propentatech.kumbaka.data.preferences.OnboardingPreferences
+import kotlinx.coroutines.launch
 
 /**
  * Graphe de navigation de l'application
@@ -21,11 +25,33 @@ fun NavGraph(
     startDestination: String = Screen.Home.route,
     paddingValues: PaddingValues = PaddingValues()
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val onboardingPreferences = OnboardingPreferences(context)
+    
     NavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = Modifier.padding(paddingValues)
     ) {
+        // Écran d'onboarding
+        composable(Screen.Onboarding.route) {
+            OnboardingScreen(
+                onFinish = {
+                    // Marquer l'onboarding comme complété
+                    coroutineScope.launch {
+                        onboardingPreferences.setOnboardingCompleted()
+                    }
+                    // Naviguer vers l'écran d'accueil
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Onboarding.route) {
+                            inclusive = true
+                        }
+                    }
+                }
+            )
+        }
+        
         // Écran d'accueil (Dashboard)
         composable(Screen.Home.route) {
             HomeScreen(
