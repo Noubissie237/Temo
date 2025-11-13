@@ -88,4 +88,67 @@ class EventRepository(
         val allEvents = eventDao.getAllEventsSync()
         notificationScheduler.rescheduleAllNotifications(allEvents)
     }
+    
+    /**
+     * Récupère les événements passés
+     */
+    fun getPastEvents(): Flow<List<Event>> {
+        val today = LocalDate.now().toString()
+        return eventDao.getPastEvents(today)
+    }
+    
+    /**
+     * Récupère les événements passés récents (moins de X jours)
+     */
+    fun getRecentPastEvents(days: Int): Flow<List<Event>> {
+        val today = LocalDate.now()
+        val cutoffDate = today.minusDays(days.toLong())
+        return eventDao.getRecentPastEvents(today.toString(), cutoffDate.toString())
+    }
+    
+    /**
+     * Supprime tous les événements passés
+     * @return Nombre d'événements supprimés
+     */
+    suspend fun deletePastEvents(today: String): Int {
+        val count = eventDao.deletePastEvents(today)
+        // Pas besoin d'annuler les notifications car elles sont déjà passées
+        return count
+    }
+    
+    /**
+     * Supprime les événements passés avant une certaine date
+     * @return Nombre d'événements supprimés
+     */
+    suspend fun deletePastEventsBefore(cutoffDate: String): Int {
+        return eventDao.deletePastEventsBefore(cutoffDate)
+    }
+    
+    /**
+     * Compte le nombre d'événements passés
+     */
+    suspend fun countPastEvents(today: String): Int {
+        return eventDao.countPastEvents(today)
+    }
+    
+    /**
+     * Compte le nombre d'événements passés avant une certaine date
+     */
+    suspend fun countPastEventsBefore(cutoffDate: String): Int {
+        return eventDao.countPastEventsBefore(cutoffDate)
+    }
+    
+    /**
+     * Annule les notifications d'un événement (exposé pour EventCleanupManager)
+     */
+    fun cancelEventNotifications(eventId: String) {
+        notificationScheduler.cancelEventNotifications(eventId)
+    }
+    
+    /**
+     * Récupère tous les événements de manière synchrone (exposé pour EventCleanupManager)
+     */
+    suspend fun getAllEventsSync(): List<Event> {
+        return eventDao.getAllEventsSync()
+    }
 }

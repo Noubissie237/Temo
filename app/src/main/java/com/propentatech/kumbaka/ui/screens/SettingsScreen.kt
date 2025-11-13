@@ -58,6 +58,7 @@ fun SettingsScreen(
     var showExportDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showCleanupDialog by remember { mutableStateOf(false) }
     var exportUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var importUri by remember { mutableStateOf<android.net.Uri?>(null) }
     
@@ -160,6 +161,17 @@ fun SettingsScreen(
                         onClick = { 
                             openFileLauncher.launch(arrayOf("application/json"))
                         }
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    SettingsItem(
+                        icon = Icons.Default.Clear,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        iconBackground = AccentLightBlue,
+                        title = "Nettoyer les événements passés",
+                        subtitle = "Supprimer les anciens événements",
+                        onClick = { showCleanupDialog = true }
                     )
                     
                     Spacer(modifier = Modifier.height(12.dp))
@@ -292,6 +304,29 @@ fun SettingsScreen(
                     } catch (e: Exception) {
                         Toast.makeText(context, "Erreur: ${e.message}", Toast.LENGTH_LONG).show()
                     }
+                }
+            }
+        )
+    }
+    
+    if (showCleanupDialog) {
+        CleanupPastEventsDialog(
+            onDismiss = { showCleanupDialog = false },
+            onCleanup = { option ->
+                showCleanupDialog = false
+                scope.launch {
+                    val count = when (option) {
+                        com.propentatech.kumbaka.data.manager.CleanupOption.ALL -> 
+                            application.eventCleanupManager.deleteAllPastEvents()
+                        else -> 
+                            application.eventCleanupManager.deletePastEventsOlderThan(option.days)
+                    }
+                    val message = if (count > 0) {
+                        "$count événement(s) supprimé(s)"
+                    } else {
+                        "Aucun événement à supprimer"
+                    }
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 }
             }
         )
@@ -752,4 +787,87 @@ fun SettingsItemWithSwitch(
             )
         )
     }
+}
+
+/**
+ * Dialogue de nettoyage des événements passés
+ */
+@Composable
+fun CleanupPastEventsDialog(
+    onDismiss: () -> Unit,
+    onCleanup: (com.propentatech.kumbaka.data.manager.CleanupOption) -> Unit
+) {
+    var selectedOption by remember { mutableStateOf(com.propentatech.kumbaka.data.manager.CleanupOption.ALL) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                Icons.Default.Clear,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        title = {
+            Text(
+                text = "Nettoyer les événements passés",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Sélectionnez les événements à supprimer :",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                // Options de nettoyage
+                com.propentatech.kumbaka.data.manager.CleanupOption.values().forEach { option ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedOption = option }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedOption == option,
+                            onClick = { selectedOption = option }
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = option.label,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+                
+                Text(
+                    text = "Cette action est irréversible",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onCleanup(selectedOption) },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("Nettoyer")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annuler")
+            }
+        }
+    )
 }

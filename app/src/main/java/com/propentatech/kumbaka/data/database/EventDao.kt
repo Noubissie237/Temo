@@ -76,4 +76,42 @@ interface EventDao {
      */
     @Query("SELECT * FROM events ORDER BY date ASC, time ASC")
     suspend fun getAllEventsSync(): List<Event>
+    
+    /**
+     * Récupère les événements passés (date < aujourd'hui)
+     */
+    @Query("SELECT * FROM events WHERE date < :today ORDER BY date DESC, time DESC")
+    fun getPastEvents(today: String): Flow<List<Event>>
+    
+    /**
+     * Récupère les événements passés récents (moins de X jours)
+     */
+    @Query("SELECT * FROM events WHERE date < :today AND date >= :cutoffDate ORDER BY date DESC, time DESC")
+    fun getRecentPastEvents(today: String, cutoffDate: String): Flow<List<Event>>
+    
+    /**
+     * Supprime tous les événements passés
+     * @return Nombre d'événements supprimés
+     */
+    @Query("DELETE FROM events WHERE date < :today")
+    suspend fun deletePastEvents(today: String): Int
+    
+    /**
+     * Supprime les événements passés avant une certaine date
+     * @return Nombre d'événements supprimés
+     */
+    @Query("DELETE FROM events WHERE date < :cutoffDate")
+    suspend fun deletePastEventsBefore(cutoffDate: String): Int
+    
+    /**
+     * Compte le nombre d'événements passés
+     */
+    @Query("SELECT COUNT(*) FROM events WHERE date < :today")
+    suspend fun countPastEvents(today: String): Int
+    
+    /**
+     * Compte le nombre d'événements passés avant une certaine date
+     */
+    @Query("SELECT COUNT(*) FROM events WHERE date < :cutoffDate")
+    suspend fun countPastEventsBefore(cutoffDate: String): Int
 }

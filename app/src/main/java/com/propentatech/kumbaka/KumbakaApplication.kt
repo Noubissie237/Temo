@@ -44,6 +44,11 @@ class KumbakaApplication : Application() {
     val taskResetManager by lazy {
         TaskResetManager(this, taskRepository)
     }
+    
+    // Event Cleanup Manager
+    val eventCleanupManager by lazy {
+        com.propentatech.kumbaka.data.manager.EventCleanupManager(this, eventRepository)
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -57,6 +62,9 @@ class KumbakaApplication : Application() {
             
             // Replanifier toutes les notifications au démarrage
             eventRepository.rescheduleAllNotifications()
+            
+            // Nettoyer les anciennes notifications si nécessaire
+            eventCleanupManager.checkAndCleanupIfNeeded()
         }
     }
 }

@@ -50,19 +50,38 @@ fun EventsScreen(
     
     // Observer les événements depuis la base de données
     val allEvents by viewModel.events.collectAsState()
-    val events = allEvents.sortedBy { it.date }
+    
+    // État pour afficher/masquer l'historique
+    var showHistory by remember { mutableStateOf(false) }
+    
+    // Filtrer les événements : séparer à venir et passés récents (7 jours)
+    val today = remember { java.time.LocalDate.now() }
+    val sevenDaysAgo = remember { today.minusDays(7) }
+    
+    val upcomingEvents = allEvents.filter { it.date >= today }.sortedBy { it.date }
+    val recentPastEvents = allEvents.filter { it.date < today && it.date >= sevenDaysAgo }.sortedByDescending { it.date }
+    val events = if (showHistory) recentPastEvents else upcomingEvents
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Événements",
+                        text = if (showHistory) "Historique" else "Événements",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                 },
-
+                actions = {
+                    // Bouton pour basculer entre événements à venir et historique
+                    IconButton(onClick = { showHistory = !showHistory }) {
+                        Icon(
+                            imageVector = if (showHistory) Icons.Default.DateRange else Icons.Outlined.DateRange,
+                            contentDescription = if (showHistory) "Voir les événements à venir" else "Voir l'historique",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 ),
@@ -94,8 +113,8 @@ fun EventsScreen(
             if (events.isEmpty()) {
                 item {
                     EmptyStateMessage(
-                        message = "Aucun événement",
-                        subtitle = "Créez votre premier événement",
+                        message = if (showHistory) "Aucun événement récent" else "Aucun événement",
+                        subtitle = if (showHistory) "Les événements des 7 derniers jours apparaîtront ici" else "Créez votre premier événement",
                         icon = Icons.Outlined.DateRange,
                         modifier = Modifier.padding(top = 48.dp)
                     )

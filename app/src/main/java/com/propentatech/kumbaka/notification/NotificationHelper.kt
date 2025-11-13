@@ -96,7 +96,7 @@ object NotificationHelper {
         }
         
         val notification = NotificationCompat.Builder(context, CHANNEL_ID_EVENTS)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_stat_name)
             .setContentTitle(notificationTitle)
             .setContentText(notificationText)
             .setStyle(
