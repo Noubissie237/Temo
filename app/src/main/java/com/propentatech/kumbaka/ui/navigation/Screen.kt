@@ -16,11 +16,20 @@ sealed class Screen(val route: String) {
     object TaskEditor : Screen("task_editor/{taskId}") {
         fun createRoute(taskId: String = "new") = "task_editor/$taskId"
     }
+    object TaskDetail : Screen("task_detail/{taskId}") {
+        fun createRoute(taskId: String) = "task_detail/$taskId"
+    }
     object NoteEditor : Screen("note_editor/{noteId}") {
         fun createRoute(noteId: String = "new") = "note_editor/$noteId"
     }
+    object NoteDetail : Screen("note_detail/{noteId}") {
+        fun createRoute(noteId: String) = "note_detail/$noteId"
+    }
     object EventEditor : Screen("event_editor/{eventId}") {
         fun createRoute(eventId: String = "new") = "event_editor/$eventId"
+    }
+    object EventDetail : Screen("event_detail/{eventId}") {
+        fun createRoute(eventId: String) = "event_detail/$eventId"
     }
     object Calendar : Screen("calendar")
 }

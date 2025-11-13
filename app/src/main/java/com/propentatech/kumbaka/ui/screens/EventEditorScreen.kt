@@ -62,12 +62,14 @@ fun EventEditorScreen(
     // Charger l'événement si on est en mode édition
     LaunchedEffect(eventId) {
         if (eventId != null) {
-            viewModel.getEventById(eventId)?.let { event ->
-                title = event.title
-                description = event.description
-                location = event.location
-                selectedDate = event.date
-                selectedTime = event.time
+            viewModel.getEventById(eventId).collect { event ->
+                event?.let {
+                    title = it.title
+                    description = it.description
+                    location = it.location
+                    selectedDate = it.date
+                    selectedTime = it.time
+                }
             }
         }
     }

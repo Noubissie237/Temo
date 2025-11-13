@@ -52,10 +52,12 @@ fun NoteEditorScreen(
     // Charger la note si on est en mode édition
     LaunchedEffect(noteId) {
         if (noteId != null) {
-            viewModel.getNoteById(noteId)?.let { note ->
-                title = note.title
-                content = note.content
-                links = note.links
+            viewModel.getNoteById(noteId).collect { note ->
+                note?.let {
+                    title = it.title
+                    content = it.content
+                    links = it.links
+                }
             }
         }
     }

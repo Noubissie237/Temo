@@ -4,9 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.propentatech.kumbaka.data.model.Task
 import com.propentatech.kumbaka.data.repository.TaskRepository
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /**
@@ -62,9 +60,14 @@ class TaskViewModel(
 
 
     /**
-     * Récupère une tâche par son ID
+     * Récupère une tâche par son ID comme Flow
      */
-    suspend fun getTaskById(taskId: String): Task? {
-        return repository.getTaskById(taskId)
+    fun getTaskById(taskId: String): Flow<Task?> = flow {
+        try {
+            val task = repository.getTaskById(taskId)
+            emit(task)
+        } catch (e: Exception) {
+            emit(null)
+        }
     }
 }

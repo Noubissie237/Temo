@@ -59,13 +59,15 @@ fun TaskEditorScreen(
     // Charger la tâche si on est en mode édition
     LaunchedEffect(taskId) {
         taskId?.let { id ->
-            viewModel.getTaskById(id)?.let { task ->
-                title = task.title
-                description = task.description
-                selectedType = task.type
-                selectedPriority = task.priority
-                selectedDate = task.specificDate
-                selectedDays = task.selectedDays
+            viewModel.getTaskById(id).collect { task ->
+                task?.let {
+                    title = it.title
+                    description = it.description
+                    selectedType = it.type
+                    selectedPriority = it.priority
+                    selectedDate = it.specificDate
+                    selectedDays = it.selectedDays
+                }
             }
         }
     }

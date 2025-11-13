@@ -57,13 +57,13 @@ fun NavGraph(
                     }
                 },
                 onTaskClick = { taskId ->
-                    navController.navigate(Screen.TaskEditor.createRoute(taskId))
+                    navController.navigate(Screen.TaskDetail.createRoute(taskId))
                 },
                 onEventClick = { eventId ->
-                    navController.navigate(Screen.EventEditor.createRoute(eventId))
+                    navController.navigate(Screen.EventDetail.createRoute(eventId))
                 },
                 onNoteClick = { noteId ->
-                    navController.navigate(Screen.NoteEditor.createRoute(noteId))
+                    navController.navigate(Screen.NoteDetail.createRoute(noteId))
                 }
             )
         }
@@ -72,7 +72,7 @@ fun NavGraph(
         composable(Screen.Tasks.route) {
             TasksScreen(
                 onTaskClick = { taskId ->
-                    navController.navigate(Screen.TaskEditor.createRoute(taskId))
+                    navController.navigate(Screen.TaskDetail.createRoute(taskId))
                 },
                 onCreateTask = {
                     navController.navigate(Screen.TaskEditor.createRoute("new"))
@@ -94,11 +94,27 @@ fun NavGraph(
             )
         }
 
+        // Écran de détails de tâche
+        composable(
+            route = Screen.TaskDetail.route,
+            arguments = listOf(
+                navArgument("taskId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val taskId = backStackEntry.arguments?.getString("taskId") ?: return@composable
+            TaskDetailScreen(
+                taskId = taskId,
+                onNavigateBack = { navController.popBackStack() },
+                onEdit = { id -> navController.navigate(Screen.TaskEditor.createRoute(id)) },
+                onDelete = { navController.popBackStack() }
+            )
+        }
+
         // Écran des notes
         composable(Screen.Notes.route) {
             NotesScreen(
                 onNoteClick = { noteId ->
-                    navController.navigate(Screen.NoteEditor.createRoute(noteId))
+                    navController.navigate(Screen.NoteDetail.createRoute(noteId))
                 },
                 onCreateNote = {
                     navController.navigate(Screen.NoteEditor.createRoute("new"))
@@ -120,11 +136,27 @@ fun NavGraph(
             )
         }
 
+        // Écran de détails de note
+        composable(
+            route = Screen.NoteDetail.route,
+            arguments = listOf(
+                navArgument("noteId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val noteId = backStackEntry.arguments?.getString("noteId") ?: return@composable
+            NoteDetailScreen(
+                noteId = noteId,
+                onNavigateBack = { navController.popBackStack() },
+                onEdit = { id -> navController.navigate(Screen.NoteEditor.createRoute(id)) },
+                onDelete = { navController.popBackStack() }
+            )
+        }
+
         // Écran des événements
         composable(Screen.Events.route) {
             EventsScreen(
                 onEventClick = { eventId ->
-                    navController.navigate(Screen.EventEditor.createRoute(eventId))
+                    navController.navigate(Screen.EventDetail.createRoute(eventId))
                 },
                 onCreateEvent = {
                     navController.navigate(Screen.EventEditor.createRoute("new"))
@@ -142,7 +174,7 @@ fun NavGraph(
                     navController.navigate(Screen.EventEditor.createRoute("new"))
                 },
                 onEventClick = { eventId ->
-                    navController.navigate(Screen.EventEditor.createRoute(eventId))
+                    navController.navigate(Screen.EventDetail.createRoute(eventId))
                 }
             )
         }
@@ -158,6 +190,22 @@ fun NavGraph(
             EventEditorScreen(
                 eventId = if (eventId == "new") null else eventId,
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Écran de détails d'événement
+        composable(
+            route = Screen.EventDetail.route,
+            arguments = listOf(
+                navArgument("eventId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getString("eventId") ?: return@composable
+            EventDetailScreen(
+                eventId = eventId,
+                onNavigateBack = { navController.popBackStack() },
+                onEdit = { id -> navController.navigate(Screen.EventEditor.createRoute(id)) },
+                onDelete = { navController.popBackStack() }
             )
         }
 

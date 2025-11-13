@@ -5,10 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.propentatech.kumbaka.data.model.Event
 import com.propentatech.kumbaka.data.repository.EventRepository
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
@@ -62,10 +59,15 @@ class EventViewModel(
     }
 
     /**
-     * Récupère un événement par son ID
+     * Récupère un événement par son ID comme Flow
      */
-    suspend fun getEventById(eventId: String): Event? {
-        return repository.getEventById(eventId)
+    fun getEventById(eventId: String): Flow<Event?> = flow {
+        try {
+            val event = repository.getEventById(eventId)
+            emit(event)
+        } catch (e: Exception) {
+            emit(null)
+        }
     }
 
     /**

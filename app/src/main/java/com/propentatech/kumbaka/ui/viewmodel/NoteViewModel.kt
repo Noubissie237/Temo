@@ -5,10 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.propentatech.kumbaka.data.model.Note
 import com.propentatech.kumbaka.data.repository.NoteRepository
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /**
@@ -57,10 +54,15 @@ class NoteViewModel(
     }
 
     /**
-     * Récupère une note par son ID
+     * Récupère une note par son ID comme Flow
      */
-    suspend fun getNoteById(noteId: String): Note? {
-        return repository.getNoteById(noteId)
+    fun getNoteById(noteId: String): Flow<Note?> = flow {
+        try {
+            val note = repository.getNoteById(noteId)
+            emit(note)
+        } catch (e: Exception) {
+            emit(null)
+        }
     }
 
     /**
