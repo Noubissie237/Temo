@@ -19,6 +19,7 @@ class CoachMarkPreferences(private val context: Context) {
     
     companion object {
         private val EVENTS_HISTORY_COACH_MARK_SEEN = booleanPreferencesKey("events_history_coach_mark_seen")
+        private val ADD_LINK_COACH_MARK_SEEN = booleanPreferencesKey("add_link_coach_mark_seen")
     }
     
     /**
@@ -44,6 +45,32 @@ class CoachMarkPreferences(private val context: Context) {
     suspend fun resetEventsHistoryCoachMark() {
         context.coachMarkDataStore.edit { preferences ->
             preferences[EVENTS_HISTORY_COACH_MARK_SEEN] = false
+        }
+    }
+    
+    /**
+     * Vérifie si le coach mark d'ajout de lien a été vu
+     */
+    val isAddLinkCoachMarkSeen: Flow<Boolean> = context.coachMarkDataStore.data
+        .map { preferences ->
+            preferences[ADD_LINK_COACH_MARK_SEEN] ?: false
+        }
+    
+    /**
+     * Marque le coach mark d'ajout de lien comme vu
+     */
+    suspend fun setAddLinkCoachMarkSeen() {
+        context.coachMarkDataStore.edit { preferences ->
+            preferences[ADD_LINK_COACH_MARK_SEEN] = true
+        }
+    }
+    
+    /**
+     * Réinitialise le coach mark d'ajout de lien (pour les tests)
+     */
+    suspend fun resetAddLinkCoachMark() {
+        context.coachMarkDataStore.edit { preferences ->
+            preferences[ADD_LINK_COACH_MARK_SEEN] = false
         }
     }
 }
