@@ -83,7 +83,9 @@ fun HomeScreen(
     
     // Observer les événements depuis la base de données
     val allEvents by eventViewModel.events.collectAsState()
-    val events = allEvents.sortedBy { it.date }.take(3)
+    val today = remember { java.time.LocalDate.now() }
+    // Filtrer uniquement les événements à venir pour la page d'accueil
+    val events = allEvents.filter { it.date >= today }.sortedBy { it.date }.take(3)
     
     // Récupérer le ViewModel pour les notes
     val noteViewModel: NoteViewModel = viewModel(

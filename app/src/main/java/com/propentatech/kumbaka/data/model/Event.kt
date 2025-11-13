@@ -40,13 +40,18 @@ fun Event.daysUntil(): Long {
 }
 
 /**
- * Extension pour obtenir le label de compte à rebours (ex: "J-3", "Aujourd'hui", "J+2")
+ * Extension pour obtenir le label de compte à rebours
+ * Ex: "J-3", "Aujourd'hui", "Passé de 2 jours"
  */
 fun Event.getCountdownLabel(): String {
     val days = daysUntil()
     return when {
-        days < 0 -> "J+${-days}"
+        days < 0 -> {
+            val daysPassed = -days
+            if (daysPassed == 1L) "Passé de 1 jour" else "Passé de $daysPassed jours"
+        }
         days == 0L -> "Aujourd'hui"
+        days == 1L -> "Demain"
         else -> "J-$days"
     }
 }

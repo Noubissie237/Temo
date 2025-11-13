@@ -27,8 +27,9 @@ class EventCleanupManager(
     }
     
     /**
-     * Vérifie si un nettoyage automatique est nécessaire
+     * Vérifie si un nettoyage automatique des notifications est nécessaire
      * Appelé au démarrage de l'application
+     * NOTE: Ne supprime PAS les événements, annule seulement leurs notifications
      */
     suspend fun checkAndCleanupIfNeeded() {
         val preferences = context.dataStore.data.first()
@@ -44,7 +45,7 @@ class EventCleanupManager(
         val today = LocalDate.now()
         val daysSinceLastCleanup = java.time.temporal.ChronoUnit.DAYS.between(lastCleanupDate, today)
         
-        // Nettoyer si plus de CLEANUP_INTERVAL_DAYS jours depuis le dernier nettoyage
+        // Nettoyer les notifications si plus de CLEANUP_INTERVAL_DAYS jours depuis le dernier nettoyage
         if (daysSinceLastCleanup >= CLEANUP_INTERVAL_DAYS) {
             cleanupOldNotifications()
             updateLastCleanupDate()
