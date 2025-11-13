@@ -97,12 +97,12 @@ fun CoachMark(
                     
                     // Découpe circulaire pour le spotlight
                     val spotlightRadius = with(density) {
-                        maxOf(targetBounds.width, targetBounds.height) / 2 + 24.dp.toPx()
+                        maxOf(targetBounds.width, targetBounds.height) / 2 + 12.dp.toPx()
                     } * spotlightScale
                     
                     val spotlightCenter = Offset(
-                        x = targetBounds.center.x,
-                        y = targetBounds.center.y
+                        x = targetBounds.left + targetBounds.width / 2,
+                        y = targetBounds.top + targetBounds.height / 2
                     )
                     
                     // Dessiner le cercle de spotlight (transparent)
