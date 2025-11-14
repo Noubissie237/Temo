@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
 import androidx.lifecycle.viewmodel.compose.viewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -287,13 +288,20 @@ fun NoteCard(
         
         // Drag handle (seulement si dragHandleModifier est fourni)
         if (dragHandleModifier != null) {
+            val context = LocalContext.current
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(
                 modifier = dragHandleModifier,
-                onClick = { /* Ne rien faire */ }
+                onClick = {
+                    Toast.makeText(
+                        context,
+                        "Maintient pour déplacer l'élément",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             ) {
                 Icon(
-                    Icons.Outlined.Menu,
+                    Icons.Default.ArrowDropDown,
                     contentDescription = "Réorganiser",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
