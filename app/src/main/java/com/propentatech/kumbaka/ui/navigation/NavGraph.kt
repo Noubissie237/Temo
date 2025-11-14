@@ -238,6 +238,16 @@ fun NavGraph(
         // Écran des paramètres
         composable(Screen.Settings.route) {
             SettingsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToStatistics = {
+                    navController.navigate(Screen.Statistics.route)
+                }
+            )
+        }
+        
+        // Écran des statistiques
+        composable(Screen.Statistics.route) {
+            StatisticsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

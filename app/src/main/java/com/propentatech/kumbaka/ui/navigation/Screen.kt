@@ -35,6 +35,7 @@ sealed class Screen(val route: String) {
         fun createRoute(eventId: String) = "event_detail/$eventId"
     }
     object Calendar : Screen("calendar")
+    object Statistics : Screen("statistics")
 }
 
 /**

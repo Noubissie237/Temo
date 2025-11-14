@@ -42,7 +42,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    onNavigateToStatistics: () -> Unit = {}
 ) {
     // Récupérer le ThemeViewModel
     val context = LocalContext.current
@@ -139,6 +140,17 @@ fun SettingsScreen(
             // Section DONNÉES
             item {
                 SettingsSection(title = "DONNÉES") {
+                    SettingsItem(
+                        icon = Icons.Default.DateRange,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        iconBackground = MaterialTheme.colorScheme.primaryContainer,
+                        title = "Statistiques",
+                        subtitle = "Voir vos statistiques de tâches",
+                        onClick = onNavigateToStatistics
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
                     SettingsItem(
                         icon = Icons.Default.Share,
                         iconTint = MaterialTheme.colorScheme.primary,
