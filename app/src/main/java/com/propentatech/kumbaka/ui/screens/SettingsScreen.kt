@@ -258,6 +258,33 @@ fun SettingsScreen(
                 }
             }
 
+            // Section CONTACT & SUPPORT
+            item {
+                SettingsSection(title = "CONTACT & SUPPORT") {
+                    SettingsItem(
+                        icon = Icons.Default.Send,
+                        iconTint = Color(0xFF25D366), // Couleur WhatsApp
+                        iconBackground = Color(0xFF25D366).copy(alpha = 0.1f),
+                        title = "Nous contacter",
+                        subtitle = "Donnez votre avis, proposez une mise à jour, ou posez vos questions",
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW).apply {
+                                data = Uri.parse("https://wa.me/+237690232120")
+                            }
+                            try {
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(
+                                    context,
+                                    "Impossible d'ouvrir WhatsApp",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    )
+                }
+            }
+            
             // Section À PROPOS
             item {
                 SettingsSection(title = "À PROPOS") {
