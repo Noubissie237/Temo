@@ -54,8 +54,10 @@ fun StatisticsScreen(
     // Observer toutes les tâches
     val allTasks by viewModel.tasks.collectAsState()
     
-    // Calculer les statistiques
+    // Observer l'historique des complétions des 7 derniers jours
     val today = LocalDate.now()
+    val sevenDaysAgo = today.minusDays(7)
+    val completionHistory by application.taskRepository.getCompletionHistory(sevenDaysAgo, today).collectAsState(initial = emptyList())
     
     // Tâches applicables aujourd'hui (qu'elles soient complétées ou non)
     val tasksToday = allTasks.filter { task ->
@@ -111,6 +113,7 @@ fun StatisticsScreen(
     }
     
     // Statistiques détaillées des 7 derniers jours PRÉCÉDENTS (excluant aujourd'hui)
+    // Utilise l'historique pour un comptage précis
     val weekStats = last7DaysPrevious.map { date ->
         // Tâches qui devaient être faites ce jour
         val tasksForDay = allTasks.filter { task ->
@@ -128,16 +131,10 @@ fun StatisticsScreen(
             }
         }
         
-        // Tâches complétées ce jour
-        val completedForDay = tasksForDay.filter { task ->
-            when (task.type) {
-                TaskType.DAILY -> task.lastCompletedDate == date
-                TaskType.PERIODIC -> task.lastCompletedDate == date
-                TaskType.OCCASIONAL -> task.isCompleted && task.specificDate == date
-            }
-        }
+        // Tâches complétées ce jour (depuis l'historique)
+        val completedCount = completionHistory.count { it.completionDate == date }
         
-        Triple(date, tasksForDay.size, completedForDay.size)
+        Triple(date, tasksForDay.size, completedCount)
     }
     
     val totalTasksLast7Days = weekStats.sumOf { it.second }

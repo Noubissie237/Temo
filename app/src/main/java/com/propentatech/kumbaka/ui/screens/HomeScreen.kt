@@ -494,8 +494,7 @@ fun EventItemCompact(
                 )
                 event.time?.let { time ->
                     Text(
-                        text = time.format(DateTimeFormatter.ofPattern("HH:mm")) + 
-                              if (event.time != null) " - ${event.time!!.plusHours(1).format(DateTimeFormatter.ofPattern("HH:mm"))}" else "",
+                        text = time.format(DateTimeFormatter.ofPattern("HH:mm")),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

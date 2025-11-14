@@ -31,7 +31,7 @@ class KumbakaApplication : Application() {
     val themePreferences by lazy { ThemePreferences(this) }
     
     // Repositories
-    val taskRepository by lazy { TaskRepository(database.taskDao()) }
+    val taskRepository by lazy { TaskRepository(database.taskDao(), database.taskCompletionHistoryDao()) }
     val eventRepository by lazy { EventRepository(database.eventDao(), this) }
     val noteRepository by lazy { NoteRepository(database.noteDao()) }
     

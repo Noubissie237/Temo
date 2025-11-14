@@ -40,6 +40,7 @@ class TaskResetManager(
     
     /**
      * Réinitialise les tâches selon leur type
+     * Note: On ne réinitialise plus lastCompletedDate car on utilise l'historique
      */
     private suspend fun resetTasks() {
         val tasks = taskRepository.getAllTasks().first()
@@ -48,11 +49,7 @@ class TaskResetManager(
         tasks.forEach { task ->
             when (task.type) {
                 TaskType.DAILY, TaskType.PERIODIC -> {
-                    // Réinitialiser lastCompletedDate si ce n'est pas aujourd'hui
-                    if (task.lastCompletedDate != null && task.lastCompletedDate != today) {
-                        val updatedTask = task.copy(lastCompletedDate = null)
-                        taskRepository.updateTask(updatedTask)
-                    }
+                    // Ne rien faire - lastCompletedDate est conservé pour l'historique
                 }
                 TaskType.OCCASIONAL -> {
                     // Supprimer les tâches occasionnelles passées et complétées
