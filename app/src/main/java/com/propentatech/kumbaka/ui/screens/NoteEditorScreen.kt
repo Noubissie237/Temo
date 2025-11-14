@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -19,13 +18,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.propentatech.kumbaka.KumbakaApplication
 import com.propentatech.kumbaka.data.model.Note
-import com.propentatech.kumbaka.data.preferences.CoachMarkPreferences
-import com.propentatech.kumbaka.ui.components.CoachMark
-import com.propentatech.kumbaka.ui.components.coachMarkTarget
 import com.propentatech.kumbaka.ui.theme.*
 import com.propentatech.kumbaka.ui.viewmodel.NoteViewModel
 import com.propentatech.kumbaka.ui.viewmodel.NoteViewModelFactory
-import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
@@ -53,21 +48,6 @@ fun NoteEditorScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     
     val isEditMode = noteId != null
-    
-    // Coach Mark - Préférences et état
-    val coachMarkPreferences = remember { CoachMarkPreferences(context) }
-    val isAddLinkCoachMarkSeen by coachMarkPreferences.isAddLinkCoachMarkSeen.collectAsState(initial = true)
-    var showCoachMark by remember { mutableStateOf(false) }
-    var addIconBounds by remember { mutableStateOf<Rect?>(null) }
-    val coroutineScope = rememberCoroutineScope()
-    
-    // Afficher le coach mark après un court délai si pas encore vu et si le champ n'est pas vide
-    LaunchedEffect(isAddLinkCoachMarkSeen, addIconBounds, newLink) {
-        if (!isAddLinkCoachMarkSeen && addIconBounds != null && newLink.isNotBlank()) {
-            kotlinx.coroutines.delay(800) // Délai pour laisser l'utilisateur taper
-            showCoachMark = true
-        }
-    }
     
     // Charger la note si on est en mode édition
     LaunchedEffect(noteId) {
@@ -236,20 +216,9 @@ fun NoteEditorScreen(
                             if (newLink.isNotBlank()) {
                                 links = links + newLink
                                 newLink = ""
-                                // Marquer le coach mark comme vu après la première utilisation
-                                if (showCoachMark) {
-                                    showCoachMark = false
-                                    coroutineScope.launch {
-                                        coachMarkPreferences.setAddLinkCoachMarkSeen()
-                                    }
-                                }
                             }
                         },
-                        modifier = Modifier
-                            .align(Alignment.CenterVertically)
-                            .coachMarkTarget { bounds ->
-                                addIconBounds = bounds
-                            }
+                        modifier = Modifier.align(Alignment.CenterVertically)
                     ) {
                         Icon(
                             Icons.Default.Add,
@@ -306,20 +275,6 @@ fun NoteEditorScreen(
             }
         }
     }
-    
-    // Afficher le Coach Mark
-    CoachMark(
-        visible = showCoachMark,
-        targetBounds = addIconBounds,
-        title = "Ajouter un lien",
-        message = "Une fois votre lien saisi dans le champ de texte, cliquez sur ce bouton pour l'enregistrer. Vous pouvez ajouter autant de liens que vous le souhaitez.",
-        onDismiss = {
-            showCoachMark = false
-            coroutineScope.launch {
-                coachMarkPreferences.setAddLinkCoachMarkSeen()
-            }
-        }
-    )
     
     // Dialogue de suppression
     if (showDeleteDialog) {

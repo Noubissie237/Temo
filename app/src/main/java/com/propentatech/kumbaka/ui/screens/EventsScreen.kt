@@ -15,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -25,14 +24,10 @@ import com.propentatech.kumbaka.KumbakaApplication
 import com.propentatech.kumbaka.data.model.Event
 import com.propentatech.kumbaka.data.model.daysUntil
 import com.propentatech.kumbaka.data.model.getCountdownLabel
-import com.propentatech.kumbaka.data.preferences.CoachMarkPreferences
-import com.propentatech.kumbaka.ui.components.CoachMark
 import com.propentatech.kumbaka.ui.components.EmptyStateMessage
-import com.propentatech.kumbaka.ui.components.coachMarkTarget
 import com.propentatech.kumbaka.ui.theme.*
 import com.propentatech.kumbaka.ui.viewmodel.EventViewModel
 import com.propentatech.kumbaka.ui.viewmodel.EventViewModelFactory
-import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 
 /**
@@ -59,21 +54,6 @@ fun EventsScreen(
     // État pour afficher/masquer l'historique
     var showHistory by remember { mutableStateOf(false) }
     
-    // Coach Mark - Préférences et état
-    val coachMarkPreferences = remember { CoachMarkPreferences(context) }
-    val isCoachMarkSeen by coachMarkPreferences.isEventsHistoryCoachMarkSeen.collectAsState(initial = true)
-    var showCoachMark by remember { mutableStateOf(false) }
-    var dateRangeIconBounds by remember { mutableStateOf<Rect?>(null) }
-    val coroutineScope = rememberCoroutineScope()
-    
-    // Afficher le coach mark après un court délai si pas encore vu
-    LaunchedEffect(isCoachMarkSeen, dateRangeIconBounds) {
-        if (!isCoachMarkSeen && dateRangeIconBounds != null) {
-            kotlinx.coroutines.delay(500) // Délai pour laisser l'UI se stabiliser
-            showCoachMark = true
-        }
-    }
-    
     // Filtrer les événements : séparer à venir et passés récents (7 jours)
     val today = remember { java.time.LocalDate.now() }
     val sevenDaysAgo = remember { today.minusDays(7) }
@@ -94,12 +74,7 @@ fun EventsScreen(
                 },
                 actions = {
                     // Bouton pour basculer entre événements à venir et historique
-                    IconButton(
-                        onClick = { showHistory = !showHistory },
-                        modifier = Modifier.coachMarkTarget { bounds ->
-                            dateRangeIconBounds = bounds
-                        }
-                    ) {
+                    IconButton(onClick = { showHistory = !showHistory }) {
                         Icon(
                             imageVector = if (showHistory) Icons.Default.DateRange else Icons.Outlined.DateRange,
                             contentDescription = if (showHistory) "Voir les événements à venir" else "Voir l'historique",
@@ -154,20 +129,6 @@ fun EventsScreen(
             }
         }
     }
-    
-    // Afficher le Coach Mark
-    CoachMark(
-        visible = showCoachMark,
-        targetBounds = dateRangeIconBounds,
-        title = "Historique des événements",
-        message = "Cliquez sur cette icône pour consulter l'historique de vos événements passés des 7 derniers jours.",
-        onDismiss = {
-            showCoachMark = false
-            coroutineScope.launch {
-                coachMarkPreferences.setEventsHistoryCoachMarkSeen()
-            }
-        }
-    )
 }
 
 /**
