@@ -151,4 +151,11 @@ class EventRepository(
     suspend fun getAllEventsSync(): List<Event> {
         return eventDao.getAllEventsSync()
     }
+    
+    /**
+     * Met à jour l'ordre d'affichage des événements
+     */
+    suspend fun updateEventsOrder(events: List<Event>) {
+        eventDao.updateEvents(events)
+    }
 }

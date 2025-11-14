@@ -81,4 +81,16 @@ class NoteViewModel(
                 )
         }
     }
+    
+    /**
+     * Met à jour l'ordre d'affichage des notes après un drag & drop
+     */
+    fun updateNotesOrder(notes: List<Note>) {
+        viewModelScope.launch {
+            val updatedNotes = notes.mapIndexed { index, note ->
+                note.copy(displayOrder = index)
+            }
+            repository.updateNotesOrder(updatedNotes)
+        }
+    }
 }

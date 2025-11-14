@@ -15,7 +15,7 @@ interface TaskDao {
      * Récupère toutes les tâches
      * Retourne un Flow pour observer les changements en temps réel
      */
-    @Query("SELECT * FROM tasks ORDER BY createdAt DESC")
+    @Query("SELECT * FROM tasks ORDER BY displayOrder ASC, createdAt DESC")
     fun getAllTasks(): Flow<List<Task>>
     
     /**
@@ -66,4 +66,10 @@ interface TaskDao {
      */
     @Query("SELECT COUNT(*) FROM tasks")
     suspend fun getTaskCount(): Int
+    
+    /**
+     * Met à jour plusieurs tâches (pour le réordonnancement)
+     */
+    @Update
+    suspend fun updateTasks(tasks: List<Task>)
 }

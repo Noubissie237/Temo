@@ -3,6 +3,7 @@ package com.propentatech.kumbaka.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,6 +24,10 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
+import sh.calvin.reorderable.ReorderableLazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.propentatech.kumbaka.KumbakaApplication
 import com.propentatech.kumbaka.data.model.Task
 import com.propentatech.kumbaka.data.model.TaskPriority
@@ -84,6 +89,21 @@ fun TasksScreen(
         task.isCompletedToday()
     }
 
+    // État pour le drag & drop
+    val lazyListState = rememberLazyListState()
+    val reorderableLazyListState = rememberReorderableLazyListState(
+        lazyListState = lazyListState,
+        onMove = { from, to ->
+            // Réorganiser la liste localement
+            val mutableTodayTasks = todayTasks.toMutableList()
+            val item = mutableTodayTasks.removeAt(from.index - 1) // -1 car on a un item avant
+            mutableTodayTasks.add(to.index - 1, item)
+            
+            // Mettre à jour l'ordre dans la base de données
+            viewModel.updateTasksOrder(mutableTodayTasks)
+        }
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -115,6 +135,7 @@ fun TasksScreen(
         }
     ) { paddingValues ->
         LazyColumn(
+            state = lazyListState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
@@ -143,12 +164,16 @@ fun TasksScreen(
                         fontWeight = FontWeight.Bold
                     )
                 }
-                items(todayTasks) { task ->
-                    TaskItem(
-                        task = task,
-                        onToggleComplete = { viewModel.toggleTaskCompletion(task.id) },
-                        onClick = { onTaskClick(task.id) }
-                    )
+                items(todayTasks, key = { it.id }) { task ->
+                    ReorderableItem(reorderableLazyListState, key = task.id) { isDragging ->
+                        TaskItem(
+                            task = task,
+                            onToggleComplete = { viewModel.toggleTaskCompletion(task.id) },
+                            onClick = { onTaskClick(task.id) },
+                            isDragging = isDragging,
+                            dragHandleModifier = Modifier.longPressDraggableHandle()
+                        )
+                    }
                 }
             }
 
@@ -202,17 +227,23 @@ fun TaskItem(
     task: Task,
     onToggleComplete: () -> Unit = {},
     onClick: () -> Unit = {},
-    canToggle: Boolean = true // Par défaut, on peut cocher/décocher
+    canToggle: Boolean = true, // Par défaut, on peut cocher/décocher
+    isDragging: Boolean = false,
+    dragHandleModifier: Modifier? = null
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = if (isDragging) 
+                MaterialTheme.colorScheme.surfaceVariant 
+            else 
+                MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isDragging) 8.dp else 2.dp
+        )
     ) {
         // Vérifier si la tâche est complétée (en dehors du Row pour être accessible partout)
         val isTaskCompleted = task.isCompletedToday()
@@ -220,6 +251,7 @@ fun TaskItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .clickable(onClick = onClick)
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -332,6 +364,21 @@ fun TaskItem(
                         .clip(CircleShape)
                         .background(getPriorityColor(task.priority))
                 )
+            }
+            
+            // Drag handle (seulement si dragHandleModifier est fourni)
+            if (dragHandleModifier != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(
+                    modifier = dragHandleModifier,
+                    onClick = { /* Ne rien faire */ }
+                ) {
+                    Icon(
+                        Icons.Outlined.Menu,
+                        contentDescription = "Réorganiser",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }

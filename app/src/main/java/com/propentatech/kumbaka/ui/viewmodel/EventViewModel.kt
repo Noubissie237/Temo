@@ -109,4 +109,16 @@ class EventViewModel(
                 initialValue = emptyList()
             )
     }
+    
+    /**
+     * Met à jour l'ordre d'affichage des événements après un drag & drop
+     */
+    fun updateEventsOrder(events: List<Event>) {
+        viewModelScope.launch {
+            val updatedEvents = events.mapIndexed { index, event ->
+                event.copy(displayOrder = index)
+            }
+            repository.updateEventsOrder(updatedEvents)
+        }
+    }
 }

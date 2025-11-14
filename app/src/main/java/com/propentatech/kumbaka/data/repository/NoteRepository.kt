@@ -61,4 +61,11 @@ class NoteRepository(private val noteDao: NoteDao) {
     suspend fun deleteAllNotes() {
         noteDao.deleteAllNotes()
     }
+    
+    /**
+     * Met à jour l'ordre d'affichage des notes
+     */
+    suspend fun updateNotesOrder(notes: List<Note>) {
+        noteDao.updateNotes(notes)
+    }
 }

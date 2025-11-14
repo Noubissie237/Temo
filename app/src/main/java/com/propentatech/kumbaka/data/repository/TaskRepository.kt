@@ -125,4 +125,11 @@ class TaskRepository(
     suspend fun isTaskCompletedOnDate(taskId: String, date: LocalDate): Boolean {
         return historyDao.isTaskCompletedOnDate(taskId, date)
     }
+    
+    /**
+     * Met à jour l'ordre d'affichage des tâches
+     */
+    suspend fun updateTasksOrder(tasks: List<Task>) {
+        taskDao.updateTasks(tasks)
+    }
 }

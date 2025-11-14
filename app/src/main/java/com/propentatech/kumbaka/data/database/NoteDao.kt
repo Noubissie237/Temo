@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 interface NoteDao {
     
     // Lecture
-    @Query("SELECT * FROM notes ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM notes ORDER BY displayOrder ASC, updatedAt DESC")
     fun getAllNotes(): Flow<List<Note>>
     
     @Query("SELECT * FROM notes WHERE id = :noteId")
@@ -42,4 +42,10 @@ interface NoteDao {
     
     @Query("DELETE FROM notes")
     suspend fun deleteAllNotes()
+    
+    /**
+     * Met à jour plusieurs notes (pour le réordonnancement)
+     */
+    @Update
+    suspend fun updateNotes(notes: List<Note>)
 }

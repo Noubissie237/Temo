@@ -70,4 +70,16 @@ class TaskViewModel(
             emit(null)
         }
     }
+    
+    /**
+     * Met à jour l'ordre d'affichage des tâches après un drag & drop
+     */
+    fun updateTasksOrder(tasks: List<Task>) {
+        viewModelScope.launch {
+            val updatedTasks = tasks.mapIndexed { index, task ->
+                task.copy(displayOrder = index)
+            }
+            repository.updateTasksOrder(updatedTasks)
+        }
+    }
 }

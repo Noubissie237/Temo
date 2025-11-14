@@ -75,6 +75,9 @@ dependencies {
     // WorkManager for notifications
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     
+    // Reorderable for drag & drop
+    implementation(libs.reorderable)
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

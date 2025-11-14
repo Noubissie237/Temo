@@ -22,6 +22,7 @@ data class Note(
     val title: String,
     val content: String = "",
     val links: List<String> = emptyList(),
+    val displayOrder: Int = 0, // Ordre d'affichage pour le drag & drop
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime = LocalDateTime.now(),
     @Serializable(with = LocalDateTimeSerializer::class)

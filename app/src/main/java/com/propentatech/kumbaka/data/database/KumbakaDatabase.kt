@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.propentatech.kumbaka.data.model.Event
 import com.propentatech.kumbaka.data.model.Note
 import com.propentatech.kumbaka.data.model.Task
@@ -16,7 +18,7 @@ import com.propentatech.kumbaka.data.model.TaskCompletionHistory
  */
 @Database(
     entities = [Task::class, Event::class, Note::class, TaskCompletionHistory::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -47,6 +49,22 @@ abstract class KumbakaDatabase : RoomDatabase() {
         private var INSTANCE: KumbakaDatabase? = null
         
         /**
+         * Migration de la version 4 à 5 : Ajout de la colonne displayOrder
+         */
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Ajouter displayOrder aux tâches
+                db.execSQL("ALTER TABLE tasks ADD COLUMN displayOrder INTEGER NOT NULL DEFAULT 0")
+                
+                // Ajouter displayOrder aux notes
+                db.execSQL("ALTER TABLE notes ADD COLUMN displayOrder INTEGER NOT NULL DEFAULT 0")
+                
+                // Ajouter displayOrder aux événements
+                db.execSQL("ALTER TABLE events ADD COLUMN displayOrder INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+        
+        /**
          * Récupère l'instance singleton de la base de données
          */
         fun getInstance(context: Context): KumbakaDatabase {
@@ -64,6 +82,7 @@ abstract class KumbakaDatabase : RoomDatabase() {
                 KumbakaDatabase::class.java,
                 "kumbaka_database"
             )
+                .addMigrations(MIGRATION_4_5)
                 .fallbackToDestructiveMigration() // Pour le développement
                 .build()
         }

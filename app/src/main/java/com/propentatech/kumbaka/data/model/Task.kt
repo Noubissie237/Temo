@@ -31,6 +31,7 @@ data class Task(
     val isCompleted: Boolean = false,
     @Serializable(with = LocalDateSerializer::class)
     val lastCompletedDate: LocalDate? = null, // Pour savoir quand elle a été complétée
+    val displayOrder: Int = 0, // Ordre d'affichage pour le drag & drop
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime = LocalDateTime.now(),
     @Serializable(with = LocalDateTimeSerializer::class)

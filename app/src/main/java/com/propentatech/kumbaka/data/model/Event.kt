@@ -27,6 +27,7 @@ data class Event(
     val time: LocalTime? = null,
     val location: String = "",
     val linkedTasks: List<String> = emptyList(), // IDs des tâches liées
+    val displayOrder: Int = 0, // Ordre d'affichage pour le drag & drop
     @Serializable(with = LocalDateSerializer::class)
     val createdAt: LocalDate = LocalDate.now()
 )

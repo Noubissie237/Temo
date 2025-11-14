@@ -14,7 +14,7 @@ interface EventDao {
     /**
      * Récupère tous les événements triés par date
      */
-    @Query("SELECT * FROM events ORDER BY date ASC, time ASC")
+    @Query("SELECT * FROM events ORDER BY displayOrder ASC, date ASC, time ASC")
     fun getAllEvents(): Flow<List<Event>>
     
     /**
@@ -114,4 +114,10 @@ interface EventDao {
      */
     @Query("SELECT COUNT(*) FROM events WHERE date < :cutoffDate")
     suspend fun countPastEventsBefore(cutoffDate: String): Int
+    
+    /**
+     * Met à jour plusieurs événements (pour le réordonnancement)
+     */
+    @Update
+    suspend fun updateEvents(events: List<Event>)
 }

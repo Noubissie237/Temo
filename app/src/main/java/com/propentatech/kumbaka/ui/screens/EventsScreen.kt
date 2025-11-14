@@ -2,9 +2,11 @@ package com.propentatech.kumbaka.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,6 +22,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
+import sh.calvin.reorderable.ReorderableLazyListState
 import com.propentatech.kumbaka.KumbakaApplication
 import com.propentatech.kumbaka.data.model.Event
 import com.propentatech.kumbaka.data.model.daysUntil
@@ -61,6 +66,21 @@ fun EventsScreen(
     val upcomingEvents = allEvents.filter { it.date >= today }.sortedBy { it.date }
     val recentPastEvents = allEvents.filter { it.date < today && it.date >= sevenDaysAgo }.sortedByDescending { it.date }
     val events = if (showHistory) recentPastEvents else upcomingEvents
+    
+    // État pour le drag & drop
+    val lazyListState = rememberLazyListState()
+    val reorderableLazyListState = rememberReorderableLazyListState(
+        lazyListState = lazyListState,
+        onMove = { from, to ->
+            // Réorganiser la liste localement
+            val mutableEvents = events.toMutableList()
+            val item = mutableEvents.removeAt(from.index)
+            mutableEvents.add(to.index, item)
+            
+            // Mettre à jour l'ordre dans la base de données
+            viewModel.updateEventsOrder(mutableEvents)
+        }
+    )
 
     Scaffold(
         topBar = {
@@ -103,6 +123,7 @@ fun EventsScreen(
         }
     ) { paddingValues ->
         LazyColumn(
+            state = lazyListState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
@@ -121,11 +142,15 @@ fun EventsScreen(
                 }
             }
             
-            items(events) { event ->
-                EventListItem(
-                    event = event,
-                    onClick = { onEventClick(event.id) }
-                )
+            items(events, key = { it.id }) { event ->
+                ReorderableItem(reorderableLazyListState, key = event.id) { isDragging ->
+                    EventListItem(
+                        event = event,
+                        onClick = { onEventClick(event.id) },
+                        isDragging = isDragging,
+                        dragHandleModifier = Modifier.longPressDraggableHandle()
+                    )
+                }
             }
         }
     }
@@ -137,22 +162,33 @@ fun EventsScreen(
 @Composable
 fun EventListItem(
     event: Event,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isDragging: Boolean = false,
+    dragHandleModifier: Modifier? = null
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = if (isDragging) 
+                MaterialTheme.colorScheme.surfaceVariant 
+            else 
+                MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isDragging) 8.dp else 2.dp
+        )
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .clickable(onClick = onClick)
                 .padding(16.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+        Column(
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // En-tête : Titre + Badge
@@ -249,6 +285,22 @@ fun EventListItem(
                     }
                 }
             }
+        }
+        
+        // Drag handle (seulement si dragHandleModifier est fourni)
+        if (dragHandleModifier != null) {
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(
+                modifier = dragHandleModifier,
+                onClick = { /* Ne rien faire */ }
+            ) {
+                Icon(
+                    Icons.Outlined.Menu,
+                    contentDescription = "Réorganiser",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
         }
     }
 }
