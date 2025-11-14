@@ -86,10 +86,17 @@ fun StatisticsScreen(
     val weekStats = last7Days.map { date ->
         // Tâches qui devaient être faites ce jour
         val tasksForDay = allTasks.filter { task ->
-            when (task.type) {
-                TaskType.DAILY -> true // Toujours applicable
-                TaskType.PERIODIC -> task.selectedDays.contains(date.dayOfWeek)
-                TaskType.OCCASIONAL -> task.specificDate == date
+            // Vérifier que la tâche existait déjà à cette date
+            val taskExistedOnDate = task.createdAt.toLocalDate() <= date
+            
+            if (!taskExistedOnDate) {
+                false
+            } else {
+                when (task.type) {
+                    TaskType.DAILY -> true // Applicable si elle existait
+                    TaskType.PERIODIC -> task.selectedDays.contains(date.dayOfWeek)
+                    TaskType.OCCASIONAL -> task.specificDate == date
+                }
             }
         }
         
