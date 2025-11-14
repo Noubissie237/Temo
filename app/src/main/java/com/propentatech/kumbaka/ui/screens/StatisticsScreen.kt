@@ -56,7 +56,23 @@ fun StatisticsScreen(
     
     // Calculer les statistiques
     val today = LocalDate.now()
-    val tasksToday = allTasks.filter { it.shouldShowToday() }
+    
+    // Tâches applicables aujourd'hui (qu'elles soient complétées ou non)
+    val tasksToday = allTasks.filter { task ->
+        // Vérifier que la tâche existait déjà aujourd'hui
+        val taskExistsToday = task.createdAt.toLocalDate() <= today
+        
+        if (!taskExistsToday) {
+            false
+        } else {
+            when (task.type) {
+                TaskType.DAILY -> true
+                TaskType.PERIODIC -> task.selectedDays.contains(today.dayOfWeek)
+                TaskType.OCCASIONAL -> task.specificDate == today
+            }
+        }
+    }
+    
     val completedToday = tasksToday.filter { it.isCompletedToday() }
     val notCompletedToday = tasksToday.filter { !it.isCompletedToday() }
     
@@ -71,15 +87,25 @@ fun StatisticsScreen(
     
     // Statistiques sur 7 jours
     val last7Days = (0..6).map { today.minusDays(it.toLong()) }.reversed()
+    
+    // Graphique : nombre de tâches COMPLÉTÉES par jour
     val completionByDay = last7Days.map { date ->
-        val tasksForDay = allTasks.filter { task ->
-            when (task.type) {
-                TaskType.DAILY -> task.lastCompletedDate == date
-                TaskType.PERIODIC -> task.selectedDays.contains(date.dayOfWeek) && task.lastCompletedDate == date
-                TaskType.OCCASIONAL -> task.specificDate == date && task.isCompleted
+        val completedForDay = allTasks.filter { task ->
+            // Vérifier que la tâche existait à cette date
+            val taskExistedOnDate = task.createdAt.toLocalDate() <= date
+            
+            if (!taskExistedOnDate) {
+                false
+            } else {
+                // Vérifier si elle a été complétée ce jour
+                when (task.type) {
+                    TaskType.DAILY -> task.lastCompletedDate == date
+                    TaskType.PERIODIC -> task.selectedDays.contains(date.dayOfWeek) && task.lastCompletedDate == date
+                    TaskType.OCCASIONAL -> task.specificDate == date && task.isCompleted
+                }
             }
         }
-        tasksForDay.size
+        completedForDay.size
     }
     
     // Statistiques détaillées des 7 derniers jours
