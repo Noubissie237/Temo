@@ -8,12 +8,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import android.widget.Toast
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -162,17 +166,11 @@ fun NoteDetailScreen(
                                 )
                             }
                             
+                            val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+                            
                             currentNote.links.forEach { link ->
                                 Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { 
-                                            try {
-                                                uriHandler.openUri(link)
-                                            } catch (e: Exception) {
-                                                // Gérer l'erreur si le lien est invalide
-                                            }
-                                        },
+                                    modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(
                                         containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -195,8 +193,35 @@ fun NoteDetailScreen(
                                             text = link,
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            modifier = Modifier.weight(1f)
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable { 
+                                                    try {
+                                                        uriHandler.openUri(link)
+                                                    } catch (e: Exception) {
+                                                        // Gérer l'erreur si le lien est invalide
+                                                    }
+                                                }
                                         )
+                                        
+                                        // Icône pour copier le lien
+                                        IconButton(
+                                            onClick = {
+                                                clipboardManager.setText(AnnotatedString(link))
+                                                Toast.makeText(
+                                                    context,
+                                                    "Lien copié dans le presse-papier",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.ContentCopy,
+                                                contentDescription = "Copier le lien",
+                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
