@@ -27,6 +27,7 @@ import com.propentatech.kumbaka.ui.viewmodel.TaskViewModel
 import com.propentatech.kumbaka.ui.viewmodel.TaskViewModelFactory
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
@@ -55,12 +56,16 @@ fun TaskEditorScreen(
     var selectedDate by remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
     var selectedDays by remember { mutableStateOf<List<DayOfWeek>>(emptyList()) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    
+    // Stocker la tâche existante pour conserver les dates
+    var existingTask by remember { mutableStateOf<Task?>(null) }
 
     // Charger la tâche si on est en mode édition
     LaunchedEffect(taskId) {
         taskId?.let { id ->
             viewModel.getTaskById(id).collect { task ->
                 task?.let {
+                    existingTask = it
                     title = it.title
                     description = it.description
                     selectedType = it.type
@@ -250,16 +255,32 @@ fun TaskEditorScreen(
             Button(
                 onClick = {
                     if (isFormValid) {
-                        val task = Task(
-                            id = taskId ?: UUID.randomUUID().toString(),
-                            title = title,
-                            description = description,
-                            type = selectedType,
-                            specificDate = if (selectedType == TaskType.OCCASIONAL) selectedDate else null,
-                            selectedDays = if (selectedType == TaskType.PERIODIC) selectedDays else emptyList(),
-                            priority = selectedPriority,
-                            isCompleted = false
-                        )
+                        val task = if (isEditMode && existingTask != null) {
+                            // Mode édition : conserver createdAt, mettre à jour updatedAt
+                            existingTask!!.copy(
+                                title = title,
+                                description = description,
+                                type = selectedType,
+                                specificDate = if (selectedType == TaskType.OCCASIONAL) selectedDate else null,
+                                selectedDays = if (selectedType == TaskType.PERIODIC) selectedDays else emptyList(),
+                                priority = selectedPriority,
+                                updatedAt = LocalDateTime.now()
+                            )
+                        } else {
+                            // Mode création : nouvelle tâche avec createdAt, updatedAt = null
+                            Task(
+                                id = UUID.randomUUID().toString(),
+                                title = title,
+                                description = description,
+                                type = selectedType,
+                                specificDate = if (selectedType == TaskType.OCCASIONAL) selectedDate else null,
+                                selectedDays = if (selectedType == TaskType.PERIODIC) selectedDays else emptyList(),
+                                priority = selectedPriority,
+                                isCompleted = false,
+                                createdAt = LocalDateTime.now(),
+                                updatedAt = null
+                            )
+                        }
                         
                         if (isEditMode) {
                             viewModel.updateTask(task)

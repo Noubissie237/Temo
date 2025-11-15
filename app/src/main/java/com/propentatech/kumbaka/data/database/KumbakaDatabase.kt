@@ -18,7 +18,7 @@ import com.propentatech.kumbaka.data.model.TaskCompletionHistory
  */
 @Database(
     entities = [Task::class, Event::class, Note::class, TaskCompletionHistory::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -65,6 +65,47 @@ abstract class KumbakaDatabase : RoomDatabase() {
         }
         
         /**
+         * Migration de la version 5 à 6 : Rendre updatedAt nullable pour les tâches
+         */
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Créer une nouvelle table temporaire avec updatedAt nullable
+                db.execSQL("""
+                    CREATE TABLE tasks_new (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        title TEXT NOT NULL,
+                        description TEXT NOT NULL,
+                        type TEXT NOT NULL,
+                        specificDate TEXT,
+                        selectedDays TEXT NOT NULL,
+                        priority TEXT NOT NULL,
+                        isCompleted INTEGER NOT NULL,
+                        lastCompletedDate TEXT,
+                        displayOrder INTEGER NOT NULL,
+                        createdAt TEXT NOT NULL,
+                        updatedAt TEXT
+                    )
+                """)
+                
+                // Copier les données, en mettant updatedAt à NULL si elle est égale à createdAt
+                db.execSQL("""
+                    INSERT INTO tasks_new 
+                    SELECT id, title, description, type, specificDate, selectedDays, 
+                           priority, isCompleted, lastCompletedDate, displayOrder, 
+                           createdAt, 
+                           CASE WHEN updatedAt = createdAt THEN NULL ELSE updatedAt END
+                    FROM tasks
+                """)
+                
+                // Supprimer l'ancienne table
+                db.execSQL("DROP TABLE tasks")
+                
+                // Renommer la nouvelle table
+                db.execSQL("ALTER TABLE tasks_new RENAME TO tasks")
+            }
+        }
+        
+        /**
          * Récupère l'instance singleton de la base de données
          */
         fun getInstance(context: Context): KumbakaDatabase {
@@ -82,7 +123,7 @@ abstract class KumbakaDatabase : RoomDatabase() {
                 KumbakaDatabase::class.java,
                 "kumbaka_database"
             )
-                .addMigrations(MIGRATION_4_5)
+                .addMigrations(MIGRATION_4_5, MIGRATION_5_6)
                 .fallbackToDestructiveMigration() // Pour le développement
                 .build()
         }

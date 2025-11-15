@@ -322,14 +322,12 @@ fun TaskDetailScreen(
                         )
                         
                         // Date de modification
-                        if (currentTask.updatedAt != currentTask.createdAt) {
-                            Divider(color = MaterialTheme.colorScheme.outlineVariant)
-                            DetailInfoRow(
-                                icon = Icons.Default.Update,
-                                label = "Modifiée le",
-                                value = currentTask.updatedAt.format(DateTimeFormatter.ofPattern("dd MMMM yyyy à HH:mm", Locale.FRENCH))
-                            )
-                        }
+                        Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                        DetailInfoRow(
+                            icon = Icons.Default.Update,
+                            label = "Modifiée le",
+                            value = currentTask.updatedAt?.format(DateTimeFormatter.ofPattern("dd MMMM yyyy à HH:mm", Locale.FRENCH)) ?: "Jamais"
+                        )
                     }
                 }
             }
