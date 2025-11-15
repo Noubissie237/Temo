@@ -31,6 +31,7 @@ import sh.calvin.reorderable.ReorderableLazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.filled.AddTask
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ChecklistRtl
 import com.propentatech.kumbaka.KumbakaApplication
 import com.propentatech.kumbaka.data.model.Task
 import com.propentatech.kumbaka.data.model.TaskPriority
@@ -54,7 +55,8 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun TasksScreen(
     onTaskClick: (String) -> Unit = {},
-    onCreateTask: () -> Unit = {}
+    onCreateTask: () -> Unit = {},
+    onViewAllTasks: () -> Unit = {}
 ) {
     // Récupérer le repository depuis l'Application
     val context = LocalContext.current
@@ -116,6 +118,15 @@ fun TasksScreen(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
+                },
+                actions = {
+                    IconButton(onClick = onViewAllTasks) {
+                        Icon(
+                            imageVector = Icons.Default.ChecklistRtl,
+                            contentDescription = "Voir toutes les tâches",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface

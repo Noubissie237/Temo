@@ -197,7 +197,7 @@ fun StatisticsScreen(
                         modifier = Modifier.weight(1f),
                         title = "Programmées",
                         value = tasksToday.size.toString(),
-                        icon = Icons.Default.CheckCircle,
+                        icon = Icons.Default.Timer,
                         color = MaterialTheme.colorScheme.primary
                     )
                     StatCard(
@@ -219,14 +219,14 @@ fun StatisticsScreen(
                         modifier = Modifier.weight(1f),
                         title = "En attente",
                         value = notCompletedToday.size.toString(),
-                        icon = Icons.Default.Warning,
+                        icon = Icons.Default.MotionPhotosPause,
                         color = PriorityMedium
                     )
                     StatCard(
                         modifier = Modifier.weight(1f),
                         title = "Taux",
                         value = "$completionRate%",
-                        icon = Icons.Default.Star,
+                        icon = Icons.Default.Percent,
                         color = SecondaryPurple
                     )
                 }

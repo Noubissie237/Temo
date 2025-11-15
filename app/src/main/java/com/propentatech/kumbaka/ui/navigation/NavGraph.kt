@@ -102,6 +102,19 @@ fun NavGraph(
                 },
                 onCreateTask = {
                     navController.navigate(Screen.TaskEditor.createRoute("new"))
+                },
+                onViewAllTasks = {
+                    navController.navigate(Screen.AllTasks.route)
+                }
+            )
+        }
+        
+        // Écran de toutes les tâches
+        composable(Screen.AllTasks.route) {
+            AllTasksScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onTaskClick = { taskId ->
+                    navController.navigate(Screen.TaskDetail.createRoute(taskId))
                 }
             )
         }
