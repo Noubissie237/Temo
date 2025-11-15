@@ -266,7 +266,7 @@ fun SettingsScreen(
             item {
                 SettingsSection(title = "APPARENCE") {
                     SettingsItemWithSwitch(
-                        icon = Icons.Default.Settings,
+                        icon = Icons.Default.DarkMode,
                         iconTint = MaterialTheme.colorScheme.primary,
                         iconBackground = MaterialTheme.colorScheme.primaryContainer,
                         title = "Mode sombre",
@@ -281,7 +281,7 @@ fun SettingsScreen(
             item {
                 SettingsSection(title = "CONTACT & SUPPORT") {
                     SettingsItem(
-                        icon = Icons.Default.Send,
+                        icon = Icons.Default.Whatsapp,
                         iconTint = Color(0xFF25D366), // Couleur WhatsApp
                         iconBackground = Color(0xFF25D366).copy(alpha = 0.1f),
                         title = "Nous contacter",

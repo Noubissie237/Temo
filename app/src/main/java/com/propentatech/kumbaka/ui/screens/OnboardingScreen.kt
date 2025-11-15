@@ -20,9 +20,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.propentatech.kumbaka.R
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
@@ -36,7 +38,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 data class OnboardingPage(
     val title: String,
     val description: String,
-    val icon: ImageVector,
+    val icon: ImageVector? = null,
+    val drawableRes: Int? = null,
     val gradient: List<Color>
 )
 
@@ -55,7 +58,7 @@ fun OnboardingScreen(
         OnboardingPage(
             title = "Bienvenue sur Temo",
             description = "Votre assistant personnel pour organiser vos tâches, notes et événements en toute simplicité.",
-            icon = Icons.Default.Home,
+            drawableRes = R.drawable.logo,
             gradient = listOf(
                 MaterialTheme.colorScheme.primary,
                 MaterialTheme.colorScheme.secondary
@@ -64,7 +67,7 @@ fun OnboardingScreen(
         OnboardingPage(
             title = "Gérez vos tâches",
             description = "Créez des tâches quotidiennes, périodiques ou occasionnelles. Suivez votre progression et ne manquez plus rien.",
-            icon = Icons.Default.CheckCircle,
+            icon = Icons.Default.TaskAlt,
             gradient = listOf(
                 MaterialTheme.colorScheme.secondary,
                 MaterialTheme.colorScheme.tertiary
@@ -198,7 +201,7 @@ fun OnboardingPageContent(page: OnboardingPage) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Icône avec dégradé
+        // Icône ou logo avec dégradé
         Box(
             modifier = Modifier
                 .size(160.dp)
@@ -210,12 +213,25 @@ fun OnboardingPageContent(page: OnboardingPage) {
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = page.icon,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(80.dp)
-            )
+            when {
+                page.drawableRes != null -> {
+                    // Afficher le logo depuis les ressources drawable
+                    androidx.compose.foundation.Image(
+                        painter = painterResource(id = page.drawableRes),
+                        contentDescription = null,
+                        modifier = Modifier.size(200.dp)
+                    )
+                }
+                page.icon != null -> {
+                    // Afficher l'icône vectorielle
+                    Icon(
+                        imageVector = page.icon,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(80.dp)
+                    )
+                }
+            }
         }
         
         Spacer(modifier = Modifier.height(48.dp))
