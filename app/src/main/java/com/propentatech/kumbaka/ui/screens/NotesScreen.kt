@@ -224,7 +224,11 @@ fun NoteCard(
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .then(
+                if (dragHandleModifier != null) dragHandleModifier
+                else Modifier
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isDragging) 
@@ -239,7 +243,6 @@ fun NoteCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
                 .padding(16.dp),
             verticalAlignment = Alignment.Top
         ) {
@@ -286,26 +289,16 @@ fun NoteCard(
             )
         }
         
-        // Drag handle (seulement si dragHandleModifier est fourni)
-        if (dragHandleModifier != null) {
-            val context = LocalContext.current
-            Spacer(modifier = Modifier.width(8.dp))
-            IconButton(
-                modifier = dragHandleModifier,
-                onClick = {
-                    Toast.makeText(
-                        context,
-                        "Maintient pour déplacer l'élément",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            ) {
-                Icon(
-                    Icons.Default.ArrowDropDown,
-                    contentDescription = "Réorganiser",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        // Icône pour voir les détails
+        Spacer(modifier = Modifier.width(8.dp))
+        IconButton(
+            onClick = onClick
+        ) {
+            Icon(
+                Icons.Outlined.Info,
+                contentDescription = "Voir les détails",
+                tint = MaterialTheme.colorScheme.primary
+            )
         }
         }
     }
