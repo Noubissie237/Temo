@@ -23,6 +23,7 @@ import com.propentatech.kumbaka.data.model.Note
 import com.propentatech.kumbaka.ui.theme.*
 import com.propentatech.kumbaka.ui.viewmodel.NoteViewModel
 import com.propentatech.kumbaka.ui.viewmodel.NoteViewModelFactory
+import java.time.LocalDateTime
 import java.util.UUID
 
 /**
@@ -49,6 +50,9 @@ fun NoteEditorScreen(
     var newLink by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
     
+    // Stocker la note existante pour conserver les dates
+    var existingNote by remember { mutableStateOf<Note?>(null) }
+    
     val isEditMode = noteId != null
     
     // Charger la note si on est en mode édition
@@ -56,6 +60,7 @@ fun NoteEditorScreen(
         if (noteId != null) {
             viewModel.getNoteById(noteId).collect { note ->
                 note?.let {
+                    existingNote = it
                     title = it.title
                     content = it.content
                     links = it.links
@@ -241,12 +246,25 @@ fun NoteEditorScreen(
                     Button(
                         onClick = {
                             if (isFormValid) {
-                                val note = Note(
-                                    id = noteId ?: UUID.randomUUID().toString(),
-                                    title = title,
-                                    content = content,
-                                    links = links
-                                )
+                                val note = if (isEditMode && existingNote != null) {
+                                    // Mode édition : conserver createdAt, mettre à jour updatedAt
+                                    existingNote!!.copy(
+                                        title = title,
+                                        content = content,
+                                        links = links,
+                                        updatedAt = LocalDateTime.now()
+                                    )
+                                } else {
+                                    // Mode création : nouvelle note avec createdAt, updatedAt = null
+                                    Note(
+                                        id = UUID.randomUUID().toString(),
+                                        title = title,
+                                        content = content,
+                                        links = links,
+                                        createdAt = LocalDateTime.now(),
+                                        updatedAt = null
+                                    )
+                                }
                                 
                                 if (isEditMode) {
                                     viewModel.updateNote(note)
