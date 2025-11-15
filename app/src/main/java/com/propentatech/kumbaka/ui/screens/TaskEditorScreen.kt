@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import java.util.Calendar
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.propentatech.kumbaka.KumbakaApplication
 import com.propentatech.kumbaka.data.model.Task
@@ -438,8 +439,9 @@ fun DayOfWeekSelector(
 }
 
 /**
- * Sélecteur rapide de date
+ * Sélecteur rapide de date avec calendrier
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DateQuickSelector(
     selectedDate: LocalDate?,
@@ -447,65 +449,141 @@ fun DateQuickSelector(
 ) {
     val today = LocalDate.now()
     val tomorrow = today.plusDays(1)
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // Bouton Aujourd'hui
-        Surface(
-            onClick = { onDateSelected(today) },
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(12.dp),
-            color = if (selectedDate == today) 
-                MaterialTheme.colorScheme.primary 
-            else 
-                MaterialTheme.colorScheme.surfaceVariant
+    var showDatePicker by remember { mutableStateOf(false) }
+    
+    // DatePickerDialog
+    if (showDatePicker) {
+        // Définir la date minimale (aujourd'hui à minuit)
+        val todayMillis = today.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = selectedDate?.atStartOfDay(java.time.ZoneId.systemDefault())?.toInstant()?.toEpochMilli()
+                ?: todayMillis,
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    // Autoriser uniquement les dates >= aujourd'hui
+                    return utcTimeMillis >= todayMillis
+                }
+            }
+        )
+        
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val instant = java.time.Instant.ofEpochMilli(millis)
+                            val date = instant.atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                            onDateSelected(date)
+                        }
+                        showDatePicker = false
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Annuler")
+                }
+            }
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Raccourcis rapides
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Bouton Aujourd'hui
+            Surface(
+                onClick = { onDateSelected(today) },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                color = if (selectedDate == today) 
+                    MaterialTheme.colorScheme.primary 
+                else 
+                    MaterialTheme.colorScheme.surfaceVariant
             ) {
-                Text(
-                    text = "Aujourd'hui",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (selectedDate == today) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = if (selectedDate == today) FontWeight.Bold else FontWeight.Normal
-                )
-                Text(
-                    text = today.format(DateTimeFormatter.ofPattern("dd MMM")),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (selectedDate == today) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Aujourd'hui",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (selectedDate == today) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (selectedDate == today) FontWeight.Bold else FontWeight.Normal
+                    )
+                    Text(
+                        text = today.format(DateTimeFormatter.ofPattern("dd MMM")),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (selectedDate == today) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Bouton Demain
+            Surface(
+                onClick = { onDateSelected(tomorrow) },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                color = if (selectedDate == tomorrow) 
+                    MaterialTheme.colorScheme.primary 
+                else 
+                    MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Demain",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (selectedDate == tomorrow) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (selectedDate == tomorrow) FontWeight.Bold else FontWeight.Normal
+                    )
+                    Text(
+                        text = tomorrow.format(DateTimeFormatter.ofPattern("dd MMM")),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (selectedDate == tomorrow) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
-
-        // Bouton Demain
-        Surface(
-            onClick = { onDateSelected(tomorrow) },
-            modifier = Modifier.weight(1f),
+        
+        // Bouton pour ouvrir le calendrier
+        OutlinedButton(
+            onClick = { showDatePicker = true },
+            modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            color = if (selectedDate == tomorrow) 
-                MaterialTheme.colorScheme.primary 
-            else 
-                MaterialTheme.colorScheme.surfaceVariant
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = if (selectedDate != null && selectedDate != today && selectedDate != tomorrow)
+                    MaterialTheme.colorScheme.primaryContainer
+                else
+                    Color.Transparent
+            )
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Demain",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (selectedDate == tomorrow) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = if (selectedDate == tomorrow) FontWeight.Bold else FontWeight.Normal
-                )
-                Text(
-                    text = tomorrow.format(DateTimeFormatter.ofPattern("dd MMM")),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (selectedDate == tomorrow) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.CalendarMonth,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = if (selectedDate != null && selectedDate != today && selectedDate != tomorrow) {
+                    selectedDate.format(DateTimeFormatter.ofPattern("EEEE dd MMMM yyyy", Locale.FRENCH))
+                } else {
+                    "Choisir une autre date"
+                },
+                style = MaterialTheme.typography.labelLarge
+            )
         }
     }
 }
