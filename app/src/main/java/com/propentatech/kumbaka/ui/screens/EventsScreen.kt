@@ -97,7 +97,7 @@ fun EventsScreen(
                     // Bouton pour basculer entre événements à venir et historique
                     IconButton(onClick = { showHistory = !showHistory }) {
                         Icon(
-                            imageVector = if (showHistory) Icons.Default.DateRange else Icons.Outlined.DateRange,
+                            imageVector = if (showHistory) Icons.Outlined.CalendarMonth else Icons.Outlined.History,
                             contentDescription = if (showHistory) "Voir les événements à venir" else "Voir l'historique",
                             tint = MaterialTheme.colorScheme.primary
                         )
