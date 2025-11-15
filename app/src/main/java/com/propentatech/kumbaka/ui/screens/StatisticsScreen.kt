@@ -91,25 +91,11 @@ fun StatisticsScreen(
     // J-7, J-6, J-5, J-4, J-3, J-2, J-1 (aujourd'hui exclu)
     val last7DaysPrevious = (1..7).map { today.minusDays(it.toLong()) }.reversed()
     
-    // Graphique : nombre de tâches COMPLÉTÉES par jour (incluant aujourd'hui pour la visualisation)
-    val last7DaysWithToday = (0..6).map { today.minusDays(it.toLong()) }.reversed()
-    val completionByDay = last7DaysWithToday.map { date ->
-        val completedForDay = allTasks.filter { task ->
-            // Vérifier que la tâche existait à cette date
-            val taskExistedOnDate = task.createdAt.toLocalDate() <= date
-            
-            if (!taskExistedOnDate) {
-                false
-            } else {
-                // Vérifier si elle a été complétée ce jour
-                when (task.type) {
-                    TaskType.DAILY -> task.lastCompletedDate == date
-                    TaskType.PERIODIC -> task.selectedDays.contains(date.dayOfWeek) && task.lastCompletedDate == date
-                    TaskType.OCCASIONAL -> task.specificDate == date && task.isCompleted
-                }
-            }
-        }
-        completedForDay.size
+    // Graphique : nombre de tâches COMPLÉTÉES par jour (7 jours PRÉCÉDENTS, aujourd'hui exclu)
+    // Utilise l'historique pour un comptage précis
+    val completionByDay = last7DaysPrevious.map { date ->
+        // Compter les complétions depuis l'historique
+        completionHistory.count { it.completionDate == date }
     }
     
     // Statistiques détaillées des 7 derniers jours PRÉCÉDENTS (excluant aujourd'hui)
@@ -279,7 +265,7 @@ fun StatisticsScreen(
             
             item {
                 WeeklyActivityChart(
-                    days = last7DaysWithToday,
+                    days = last7DaysPrevious,
                     completionCounts = completionByDay
                 )
             }
