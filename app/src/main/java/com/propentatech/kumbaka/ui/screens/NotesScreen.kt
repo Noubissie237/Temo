@@ -309,7 +309,7 @@ fun NoteCard(
  */
 fun formatNoteDate(note: Note): String {
     val now = java.time.LocalDateTime.now()
-    val noteDate = note.updatedAt
+    val noteDate = note.updatedAt ?: note.createdAt
     
     val daysDiff = java.time.temporal.ChronoUnit.DAYS.between(
         noteDate.toLocalDate(),

@@ -94,7 +94,7 @@ fun HomeScreen(
     
     // Observer les notes depuis la base de données
     val allNotes by noteViewModel.notes.collectAsState()
-    val notes = allNotes.sortedByDescending { it.updatedAt }.take(4)
+    val notes = allNotes.sortedByDescending { it.updatedAt ?: it.createdAt }.take(4)
     
     // État de la recherche
     var isSearching by remember { mutableStateOf(false) }
