@@ -12,6 +12,12 @@ import java.time.LocalDate
 interface TaskCompletionHistoryDao {
     
     /**
+     * Récupère tout l'historique des complétions (pour export)
+     */
+    @Query("SELECT * FROM task_completion_history ORDER BY completionDate DESC")
+    fun getAllHistory(): Flow<List<TaskCompletionHistory>>
+    
+    /**
      * Insère un enregistrement de complétion
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -64,4 +70,10 @@ interface TaskCompletionHistoryDao {
      */
     @Query("DELETE FROM task_completion_history WHERE taskId = :taskId")
     suspend fun deleteAllForTask(taskId: String)
+    
+    /**
+     * Supprime tout l'historique (pour la suppression de toutes les données)
+     */
+    @Query("DELETE FROM task_completion_history")
+    suspend fun deleteAllHistory()
 }

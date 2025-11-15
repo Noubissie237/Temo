@@ -4,6 +4,7 @@ import android.content.Context
 import com.propentatech.kumbaka.data.model.Event
 import com.propentatech.kumbaka.data.model.Note
 import com.propentatech.kumbaka.data.model.Task
+import com.propentatech.kumbaka.data.model.TaskCompletionHistory
 import com.propentatech.kumbaka.data.repository.EventRepository
 import com.propentatech.kumbaka.data.repository.NoteRepository
 import com.propentatech.kumbaka.data.repository.TaskRepository
@@ -34,7 +35,8 @@ data class BackupData(
     val exportDate: String,
     val tasks: List<Task>? = null,
     val notes: List<Note>? = null,
-    val events: List<Event>? = null
+    val events: List<Event>? = null,
+    val taskCompletionHistory: List<TaskCompletionHistory>? = null
 )
 
 /**
@@ -72,12 +74,18 @@ class DataExportImportManager(
                 eventRepository.getAllEvents().first()
             } else null
             
+            // Exporter l'historique des tâches si les tâches sont exportées
+            val taskHistory = if (exportData.includeTasks) {
+                taskRepository.getAllTaskCompletionHistory().first()
+            } else null
+            
             val backupData = BackupData(
                 version = "1.0.0",
                 exportDate = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME),
                 tasks = tasks,
                 notes = notes,
-                events = events
+                events = events,
+                taskCompletionHistory = taskHistory
             )
             
             val jsonString = json.encodeToString(backupData)
@@ -125,6 +133,13 @@ class DataExportImportManager(
                 backupData.events.forEach { event ->
                     eventRepository.addEvent(event)
                     importedCount++
+                }
+            }
+            
+            // Importer l'historique des tâches si les tâches sont importées
+            if (importData.includeTasks && backupData.taskCompletionHistory != null) {
+                backupData.taskCompletionHistory.forEach { history ->
+                    taskRepository.addTaskCompletionHistory(history)
                 }
             }
             

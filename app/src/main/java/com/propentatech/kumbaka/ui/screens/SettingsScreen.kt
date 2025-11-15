@@ -62,6 +62,7 @@ fun SettingsScreen(
     var showCleanupDialog by remember { mutableStateOf(false) }
     var exportUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var importUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var pendingExportData by remember { mutableStateOf<ExportData?>(null) }
     
     val scope = rememberCoroutineScope()
     val dataManager = application.dataExportImportManager
@@ -93,7 +94,25 @@ fun SettingsScreen(
     ) { uri ->
         uri?.let {
             exportUri = it
-            showExportDialog = true
+            // Exporter avec les données sélectionnées précédemment
+            pendingExportData?.let { exportData ->
+                scope.launch {
+                    try {
+                        context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                            val result = dataManager.exportData(outputStream, exportData)
+                            result.onSuccess { message ->
+                                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                            }.onFailure { error ->
+                                Toast.makeText(context, "Erreur: ${error.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Erreur: ${e.message}", Toast.LENGTH_LONG).show()
+                    } finally {
+                        pendingExportData = null
+                    }
+                }
+            }
         }
     }
     
@@ -141,7 +160,7 @@ fun SettingsScreen(
             item {
                 SettingsSection(title = "DONNÉES") {
                     SettingsItem(
-                        icon = Icons.Default.DateRange,
+                        icon = Icons.Default.InsertChartOutlined,
                         iconTint = MaterialTheme.colorScheme.primary,
                         iconBackground = MaterialTheme.colorScheme.primaryContainer,
                         title = "Statistiques",
@@ -152,20 +171,20 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     
                     SettingsItem(
-                        icon = Icons.Default.Share,
+                        icon = Icons.Default.CloudUpload,
                         iconTint = MaterialTheme.colorScheme.primary,
                         iconBackground = MaterialTheme.colorScheme.primaryContainer,
                         title = "Exporter les données",
                         subtitle = "Sauvegarder vos données",
                         onClick = { 
-                            createFileLauncher.launch(dataManager.generateExportFileName())
+                            showExportDialog = true
                         }
                     )
                     
                     Spacer(modifier = Modifier.height(12.dp))
                     
                     SettingsItem(
-                        icon = Icons.Default.Add,
+                        icon = Icons.Default.CloudDownload,
                         iconTint = MaterialTheme.colorScheme.primary,
                         iconBackground = MaterialTheme.colorScheme.primaryContainer,
                         title = "Importer les données",
@@ -178,7 +197,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     
                     SettingsItem(
-                        icon = Icons.Default.Clear,
+                        icon = Icons.Default.AutoDelete,
                         iconTint = MaterialTheme.colorScheme.primary,
                         iconBackground = MaterialTheme.colorScheme.primaryContainer,
                         title = "Nettoyer les événements passés",
@@ -302,25 +321,14 @@ fun SettingsScreen(
     }
     
     // Dialogues Export/Import/Delete
-    if (showExportDialog && exportUri != null) {
+    if (showExportDialog) {
         ExportDataDialog(
             onDismiss = { showExportDialog = false },
             onExport = { exportData ->
                 showExportDialog = false
-                scope.launch {
-                    try {
-                        context.contentResolver.openOutputStream(exportUri!!)?.use { outputStream ->
-                            val result = dataManager.exportData(outputStream, exportData)
-                            result.onSuccess { message ->
-                                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                            }.onFailure { error ->
-                                Toast.makeText(context, "Erreur: ${error.message}", Toast.LENGTH_LONG).show()
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Toast.makeText(context, "Erreur: ${e.message}", Toast.LENGTH_LONG).show()
-                    }
-                }
+                pendingExportData = exportData
+                // Lancer le sélecteur de fichier après avoir choisi les données
+                createFileLauncher.launch(dataManager.generateExportFileName())
             }
         )
     }

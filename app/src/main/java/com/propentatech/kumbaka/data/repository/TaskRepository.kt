@@ -106,9 +106,10 @@ class TaskRepository(
     }
     
     /**
-     * Supprime toutes les tâches
+     * Supprime toutes les tâches et leur historique
      */
     suspend fun deleteAllTasks() {
+        historyDao.deleteAllHistory()
         taskDao.deleteAllTasks()
     }
     
@@ -131,5 +132,19 @@ class TaskRepository(
      */
     suspend fun updateTasksOrder(tasks: List<Task>) {
         taskDao.updateTasks(tasks)
+    }
+    
+    /**
+     * Récupère tout l'historique des complétions (pour export)
+     */
+    fun getAllTaskCompletionHistory(): Flow<List<TaskCompletionHistory>> {
+        return historyDao.getAllHistory()
+    }
+    
+    /**
+     * Ajoute un enregistrement d'historique (pour import)
+     */
+    suspend fun addTaskCompletionHistory(history: TaskCompletionHistory) {
+        historyDao.insert(history)
     }
 }
