@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.util.UUID
 
 /**
@@ -22,13 +23,20 @@ data class Task(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
     val description: String = "",
+    val projectId: String? = null,
+    val milestoneId: String? = null,
     val type: TaskType = TaskType.OCCASIONAL,
     @Serializable(with = LocalDateSerializer::class)
     val specificDate: LocalDate? = null, // Pour les tâches occasionnelles
     @Serializable(with = DayOfWeekListSerializer::class)
     val selectedDays: List<DayOfWeek> = emptyList(), // Pour les tâches périodiques
     val priority: TaskPriority = TaskPriority.MEDIUM,
-    val isCompleted: Boolean = false,
+    val isCompleted: Boolean = false, // Keep for backward compatibility during processing if needed
+    val state: TaskState = TaskState.TODO, // Nouvel état précis
+    @Serializable(with = com.propentatech.kumbaka.data.serializers.LocalTimeSerializer::class)
+    val startTime: LocalTime? = null, // Heure de début prévue
+    @Serializable(with = com.propentatech.kumbaka.data.serializers.LocalTimeSerializer::class)
+    val endTime: LocalTime? = null, // Heure de fin prévue
     @Serializable(with = LocalDateSerializer::class)
     val lastCompletedDate: LocalDate? = null, // Pour savoir quand elle a été complétée
     val displayOrder: Int = 0, // Ordre d'affichage pour le drag & drop
@@ -37,6 +45,16 @@ data class Task(
     @Serializable(with = LocalDateTimeSerializer::class)
     val updatedAt: LocalDateTime? = null
 )
+
+/**
+ * États possibles d'une tâche
+ */
+enum class TaskState {
+    TODO,           // À faire
+    IN_PROGRESS,    // En cours
+    DONE,           // Terminée
+    MISSED          // Manquée (non complétée à temps)
+}
 
 /**
  * Types de tâches

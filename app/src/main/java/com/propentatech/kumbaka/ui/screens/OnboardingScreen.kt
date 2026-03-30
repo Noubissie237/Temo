@@ -56,7 +56,7 @@ fun OnboardingScreen(
     
     val pages = listOf(
         OnboardingPage(
-            title = "Bienvenue sur Temo",
+            title = "Bienvenue sur MyLive",
             description = "Votre assistant personnel pour organiser vos tâches, notes et événements en toute simplicité.",
             drawableRes = R.drawable.logo,
             gradient = listOf(

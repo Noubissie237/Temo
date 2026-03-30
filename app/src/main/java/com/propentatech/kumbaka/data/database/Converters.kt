@@ -72,4 +72,31 @@ class Converters {
     fun toStringList(value: String?): List<String>? {
         return value?.split("|||")?.filter { it.isNotEmpty() }
     }
+    
+    // List<Int> — pour reminderMinutesBefore
+    @TypeConverter
+    fun fromIntList(value: List<Int>?): String? {
+        return value?.joinToString(",")
+    }
+    
+    @TypeConverter
+    fun toIntList(value: String?): List<Int>? {
+        return value?.split(",")?.mapNotNull { it.trim().toIntOrNull() }
+    }
+    
+    // PlanningType enum
+    @TypeConverter
+    fun fromPlanningType(value: com.propentatech.kumbaka.data.model.PlanningType?): String? = value?.name
+    
+    @TypeConverter
+    fun toPlanningType(value: String?): com.propentatech.kumbaka.data.model.PlanningType? =
+        value?.let { com.propentatech.kumbaka.data.model.PlanningType.valueOf(it) }
+    
+    // PlanningRecurrence enum
+    @TypeConverter
+    fun fromPlanningRecurrence(value: com.propentatech.kumbaka.data.model.PlanningRecurrence?): String? = value?.name
+    
+    @TypeConverter
+    fun toPlanningRecurrence(value: String?): com.propentatech.kumbaka.data.model.PlanningRecurrence? =
+        value?.let { com.propentatech.kumbaka.data.model.PlanningRecurrence.valueOf(it) }
 }

@@ -28,7 +28,7 @@ class ThemeViewModel(
     /**
      * Activer/désactiver le mode sombre
      */
-    fun toggleDarkMode(enabled: Boolean) {
+    fun setDarkMode(enabled: Boolean) {
         viewModelScope.launch {
             themePreferences.setDarkMode(enabled)
         }

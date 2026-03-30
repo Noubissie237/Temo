@@ -2,30 +2,51 @@ package com.propentatech.kumbaka.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Couleurs principales de l'application Kumbaka
-// Basées sur les maquettes fournies
+// ============================================================
+// PALETTE KUMBAKA — ORANGE PREMIUM
+// Mode Clair : Orange + Blanc | Mode Sombre : Orange + Noir
+// ============================================================
 
-// Mode clair
-val PrimaryBlue = Color(0xFF2196F3)      // Bleu principal (boutons, accents)
-val SecondaryPurple = Color(0xFF673AB7)  // Violet secondaire (FAB, accents)
-val BackgroundLight = Color(0xFFF5F5F5)  // Fond gris clair
-val SurfaceLight = Color(0xFFFFFFFF)     // Surface blanche
-val TextPrimary = Color(0xFF1C1B1F)      // Texte principal noir
-val TextSecondary = Color(0xFF6B6B6B)    // Texte secondaire gris
+// === ORANGE (couleur signature) ===
+val OrangePrimary       = Color(0xFFFF6B00)  // Orange vif principal
+val Orange              = OrangePrimary      // Alias pour compatibilité
+val OrangeLight         = Color(0xFFFF8C42)  // Orange clair (hover/secondary)
+val OrangeDark          = Color(0xFFE85D00)  // Orange foncé (pressed)
+val OrangeGlow          = Color(0xFFFF6B00).copy(alpha = 0.15f) // Halo orange
 
-// Mode sombre
-val PrimaryBlueDark = Color(0xFF64B5F6)  // Bleu plus clair pour le mode sombre
-val SecondaryPurpleDark = Color(0xFF9575CD) // Violet plus clair
-val BackgroundDark = Color(0xFF1A1A1A)   // Fond noir/gris très foncé
-val SurfaceDark = Color(0xFF2C2C2C)      // Surface gris foncé
-val TextPrimaryDark = Color(0xFFE1E1E1) // Texte blanc cassé
-val TextSecondaryDark = Color(0xFFB0B0B0) // Texte gris clair
+// === MODE CLAIR (White + Orange) ===
+val BackgroundLight     = Color(0xFFFFFFFF)  // Fond blanc pur
+val SurfaceLight        = Color(0xFFFFF8F4)  // Surface très légèrement chaude
+val SurfaceVariantLight = Color(0xFFFFEEE0)  // Cartes légèrement orangées
+val TextPrimary         = Color(0xFF1A1A1A)  // Texte principal presque noir
+val TextSecondary       = Color(0xFF6B6B6B)  // Texte secondaire gris
 
-// Couleurs de priorité des tâches
-val PriorityHigh = Color(0xFFEF5350)     // Rouge pour priorité haute
-val PriorityMedium = Color(0xFFFF9800)   // Orange pour priorité moyenne
-val PriorityLow = Color(0xFF66BB6A)      // Vert pour priorité basse
+// === MODE SOMBRE (Black + Orange) ===
+val BackgroundDark      = Color(0xFF0A0A0A)  // Noir profond
+val SurfaceDark         = Color(0xFF1A1A1A)  // Surface grise très foncée
+val SurfaceVariantDark  = Color(0xFF242424)  // Cartes légèrement éclairées
+val TextPrimaryDark     = Color(0xFFFFFFFF)  // Blanc pur
+val TextSecondaryDark   = Color(0xFFB0B0B0)  // Gris clair
 
-// Couleurs d'accentuation
-val AccentLightBlue = Color(0xFFE3F2FD)  // Bleu clair pour les fonds
-val AccentLightPurple = Color(0xFFEDE7F6) // Violet clair pour les badges
+// === COULEURS SÉMANTIQUES (MyLive Strict) ===
+val SuccessGreen   = OrangePrimary
+val ErrorRed       = Color.Black
+val WarningYellow  = OrangeLight
+val InfoBlue       = Color.Gray
+
+// === TÂCHES : Priorités (MyLive Strict) ===
+val PriorityHigh   = Color.Black      // Très sérieux / Premium
+val PriorityMedium = OrangePrimary    // Action requise
+val PriorityLow    = Color(0xFFB0B0B0) // Moins urgent (Gris)
+
+// === Gradients fréquents ===
+val GradientOrangeStart = Color(0xFFFF6B00)
+val GradientOrangeEnd   = Color(0xFFFF3D00)
+
+// Conservés pour compatibilité avec du code existant :
+val PrimaryBlue         = OrangePrimary
+val SecondaryPurple     = OrangeLight
+val PrimaryBlueDark     = OrangePrimary
+val SecondaryPurpleDark = OrangeLight
+val AccentLightBlue     = OrangeGlow
+val AccentLightPurple   = SurfaceVariantLight
