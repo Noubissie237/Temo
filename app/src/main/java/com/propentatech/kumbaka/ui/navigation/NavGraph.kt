@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
@@ -22,6 +24,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun NavGraph(
     navController: NavHostController,
+    securityViewModel: com.propentatech.kumbaka.ui.viewmodel.SecurityViewModel,
+    themeViewModel: com.propentatech.kumbaka.ui.viewmodel.ThemeViewModel,
     startDestination: String = Screen.Home.route,
     paddingValues: PaddingValues = PaddingValues()
 ) {
@@ -34,19 +38,39 @@ fun NavGraph(
         startDestination = startDestination,
         modifier = Modifier.padding(paddingValues)
     ) {
-        // Écran d'onboarding
+        // Écran d'onboarding strict
         composable(Screen.Onboarding.route) {
-            OnboardingScreen(
-                onFinish = {
-                    // Marquer l'onboarding comme complété
+            PermissionsOnboardingScreen(
+                onPermissionsGranted = {
                     coroutineScope.launch {
                         onboardingPreferences.setOnboardingCompleted()
                     }
-                    // Naviguer vers l'écran d'accueil
-                    navController.navigate(Screen.Home.route) {
+                    navController.navigate(Screen.AuthSetup.route) {
                         popUpTo(Screen.Onboarding.route) {
                             inclusive = true
                         }
+                    }
+                }
+            )
+        }
+
+        // Écran de configuration initiale de la sécurité
+        composable(Screen.AuthSetup.route) {
+            AuthSetupScreen(
+                onSetupComplete = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.AuthSetup.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Écran de connexion PIN / Empreinte
+        composable(Screen.Login.route) {
+            LoginScreen(
+                onAuthenticated = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 }
             )
@@ -55,42 +79,47 @@ fun NavGraph(
         // Écran d'accueil (Dashboard)
         composable(Screen.Home.route) {
             HomeScreen(
+                securityViewModel = securityViewModel,
+                themeViewModel = themeViewModel,
                 onNavigateToTasks = { 
                     navController.navigate(Screen.Tasks.route) {
-                        popUpTo(Screen.Home.route) {
-                            saveState = true
-                        }
+                        popUpTo(Screen.Home.route) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                     }
                 },
                 onNavigateToNotes = { 
                     navController.navigate(Screen.Notes.route) {
-                        popUpTo(Screen.Home.route) {
-                            saveState = true
-                        }
+                        popUpTo(Screen.Home.route) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                     }
                 },
                 onNavigateToEvents = { 
                     navController.navigate(Screen.Events.route) {
-                        popUpTo(Screen.Home.route) {
-                            saveState = true
-                        }
+                        popUpTo(Screen.Home.route) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                     }
                 },
-                onTaskClick = { taskId ->
-                    navController.navigate(Screen.TaskDetail.createRoute(taskId))
+                onNavigateToFinance = {
+                    navController.navigate(Screen.Finance.route)
                 },
-                onEventClick = { eventId ->
-                    navController.navigate(Screen.EventDetail.createRoute(eventId))
+                onNavigateToReports = {
+                    navController.navigate(Screen.Reports.route)
                 },
-                onNoteClick = { noteId ->
-                    navController.navigate(Screen.NoteDetail.createRoute(noteId))
-                }
+                onNavigateToPlus = {
+                    navController.navigate(Screen.Plus.route)
+                },
+                onNavigateToAlarms = {
+                    navController.navigate(Screen.Alarms.route)
+                },
+                onNavigateToStopwatch = {
+                    navController.navigate(Screen.Stopwatch.route)
+                },
+                onTaskClick = { taskId -> navController.navigate(Screen.TaskDetail.createRoute(taskId)) },
+                onEventClick = { eventId -> navController.navigate(Screen.EventDetail.createRoute(eventId)) },
+                onNoteClick = { noteId -> navController.navigate(Screen.NoteDetail.createRoute(noteId)) }
             )
         }
 
@@ -251,6 +280,7 @@ fun NavGraph(
         // Écran des paramètres
         composable(Screen.Settings.route) {
             SettingsScreen(
+                securityViewModel = securityViewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToStatistics = {
                     navController.navigate(Screen.Statistics.route)
@@ -263,6 +293,125 @@ fun NavGraph(
             StatisticsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+        
+        // ===== MODULE FINANCE (Omniscient) =====
+        composable(Screen.Finance.route) {
+            val application = LocalContext.current.applicationContext as com.propentatech.kumbaka.KumbakaApplication
+            val financeViewModel: com.propentatech.kumbaka.ui.viewmodel.FinanceViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return com.propentatech.kumbaka.ui.viewmodel.FinanceViewModel(application.financeRepository) as T
+                    }
+                }
+            )
+            FinanceScreen(
+                viewModel = financeViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onAddTransactionClick = {}
+            )
+        }
+        
+        // ===== MODULE RAPPORTS AVANCÉS =====
+        composable(Screen.Reports.route) {
+            val application = LocalContext.current.applicationContext as com.propentatech.kumbaka.KumbakaApplication
+            val financeViewModel: com.propentatech.kumbaka.ui.viewmodel.FinanceViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return com.propentatech.kumbaka.ui.viewmodel.FinanceViewModel(application.financeRepository) as T
+                    }
+                }
+            )
+            ReportsScreen(
+                viewModel = financeViewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // ===== MODULE PROJETS (Premium) =====
+        composable(Screen.Projects.route) {
+            val application = LocalContext.current.applicationContext as com.propentatech.kumbaka.KumbakaApplication
+            val projectViewModel: com.propentatech.kumbaka.ui.viewmodel.ProjectViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return com.propentatech.kumbaka.ui.viewmodel.ProjectViewModel(application.projectRepository) as T
+                    }
+                }
+            )
+            ProjectsScreen(
+                viewModel = projectViewModel,
+                onNavigateToProjectDetail = { /* Direct to detail if needed */ }
+            )
+        }
+
+        // ===== MODULE LIFESTYLE & HUMEUR =====
+        composable(Screen.Lifestyle.route) {
+            val application = LocalContext.current.applicationContext as com.propentatech.kumbaka.KumbakaApplication
+            val lifestyleViewModel: com.propentatech.kumbaka.ui.viewmodel.LifestyleViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return com.propentatech.kumbaka.ui.viewmodel.LifestyleViewModel(application.lifestyleRepository) as T
+                    }
+                }
+            )
+            LifestyleScreen(
+                viewModel = lifestyleViewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // ===== MODULE PLANNING =====
+        composable(Screen.Planning.route) {
+            PlanningScreen(
+                onCreateSession = { navController.navigate(Screen.PlanningEditor.createRoute("new")) },
+                onEditSession = { id -> navController.navigate(Screen.PlanningEditor.createRoute(id)) }
+            )
+        }
+
+        composable(
+            route = Screen.PlanningEditor.route,
+            arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val sessionId = backStackEntry.arguments?.getString("sessionId")?.let { if (it == "new") null else it }
+            PlanningEditorScreen(
+                sessionId = sessionId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // ===== ÉCRAN PLUS (Menu Secondaire MyLive) =====
+        composable(Screen.Plus.route) {
+            PlusScreen(
+                securityViewModel = securityViewModel,
+                onNavigateToNotes = { navController.navigate(Screen.Notes.route) },
+                onNavigateToEvents = { navController.navigate(Screen.Events.route) },
+                onNavigateToLifestyle = { navController.navigate(Screen.Lifestyle.route) },
+                onNavigateToPlanning = { navController.navigate(Screen.Planning.route) },
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                onNavigateToCalendar = { navController.navigate(Screen.Calendar.route) },
+                onNavigateToAlarms = { navController.navigate(Screen.Alarms.route) },
+                onNavigateToStopwatch = { navController.navigate(Screen.Stopwatch.route) },
+                onNavigateToCalculator = { navController.navigate(Screen.Calculator.route) }
+            )
+        }
+
+        // ===== ÉCRAN CALCULATRICE =====
+        composable(Screen.Calculator.route) {
+            CalculatorScreen(onBack = { navController.popBackStack() })
+        }
+
+        // ===== ÉCRAN ALARMES =====
+        composable(Screen.Alarms.route) {
+            AlarmScreen(onBack = { navController.popBackStack() })
+        }
+
+        // ===== ÉCRAN CHRONOMÈTRE =====
+        composable(Screen.Stopwatch.route) {
+            StopwatchScreen(onBack = { navController.popBackStack() })
         }
     }
 }

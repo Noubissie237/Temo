@@ -14,8 +14,10 @@ import java.time.LocalDate
  */
 class TaskRepository(
     private val taskDao: TaskDao,
-    private val historyDao: TaskCompletionHistoryDao
+    private val historyDao: TaskCompletionHistoryDao,
+    private val context: android.content.Context
 ) {
+    private val alarmScheduler by lazy { com.propentatech.kumbaka.notification.TaskAlarmScheduler(context) }
     
     /**
      * Flow de toutes les tâches
@@ -33,6 +35,7 @@ class TaskRepository(
      */
     suspend fun addTask(task: Task) {
         taskDao.insertTask(task)
+        alarmScheduler.scheduleTaskAlarms(task)
     }
 
     /**
@@ -40,6 +43,7 @@ class TaskRepository(
      */
     suspend fun updateTask(task: Task) {
         taskDao.updateTask(task)
+        alarmScheduler.scheduleTaskAlarms(task)
     }
 
     /**
@@ -48,6 +52,7 @@ class TaskRepository(
     suspend fun deleteTask(taskId: String) {
         historyDao.deleteAllForTask(taskId)
         taskDao.deleteTaskById(taskId)
+        alarmScheduler.cancelTaskAlarms(taskId)
     }
 
     /**
@@ -58,51 +63,47 @@ class TaskRepository(
     }
 
     /**
-     * Marque une tâche comme complétée ou non
-     * Pour les tâches récurrentes, met à jour lastCompletedDate et enregistre dans l'historique
+     * Fait défiler l'état de la tâche : TODO -> IN_PROGRESS -> DONE -> TODO
      */
-    suspend fun toggleTaskCompletion(taskId: String) {
+    suspend fun cycleTaskState(taskId: String) {
         val task = taskDao.getTaskById(taskId) ?: return
         val today = LocalDate.now()
         
+        val newState = when (task.state) {
+            com.propentatech.kumbaka.data.model.TaskState.TODO -> com.propentatech.kumbaka.data.model.TaskState.IN_PROGRESS
+            com.propentatech.kumbaka.data.model.TaskState.IN_PROGRESS -> com.propentatech.kumbaka.data.model.TaskState.DONE
+            com.propentatech.kumbaka.data.model.TaskState.DONE -> com.propentatech.kumbaka.data.model.TaskState.TODO
+            com.propentatech.kumbaka.data.model.TaskState.MISSED -> com.propentatech.kumbaka.data.model.TaskState.TODO
+        }
+        
+        val newIsCompleted = newState == com.propentatech.kumbaka.data.model.TaskState.DONE
+        
         val updatedTask = when (task.type) {
             TaskType.DAILY, TaskType.PERIODIC -> {
-                // Pour les tâches récurrentes, on met à jour lastCompletedDate
-                if (task.lastCompletedDate == today) {
-                    // Décocher : retirer la date de complétion et supprimer de l'historique
+                if (!newIsCompleted && task.lastCompletedDate == today) {
                     historyDao.deleteByTaskAndDate(taskId, today)
-                    task.copy(lastCompletedDate = null)
-                } else {
-                    // Cocher : marquer comme complétée aujourd'hui et ajouter à l'historique
-                    val history = TaskCompletionHistory(
-                        taskId = taskId,
-                        completionDate = today,
-                        taskType = task.type
-                    )
+                    task.copy(state = newState, isCompleted = false, lastCompletedDate = null)
+                } else if (newIsCompleted) {
+                    val history = TaskCompletionHistory(taskId = taskId, completionDate = today, taskType = task.type)
                     historyDao.insert(history)
-                    task.copy(lastCompletedDate = today)
+                    task.copy(state = newState, isCompleted = true, lastCompletedDate = today)
+                } else {
+                    task.copy(state = newState, isCompleted = newIsCompleted)
                 }
             }
             TaskType.OCCASIONAL -> {
-                // Pour les tâches occasionnelles, toggle isCompleted
-                val newCompletedState = !task.isCompleted
-                if (newCompletedState && task.specificDate != null) {
-                    // Ajouter à l'historique si complétée
-                    val history = TaskCompletionHistory(
-                        taskId = taskId,
-                        completionDate = task.specificDate,
-                        taskType = task.type
-                    )
+                if (newIsCompleted && task.specificDate != null) {
+                    val history = TaskCompletionHistory(taskId = taskId, completionDate = task.specificDate, taskType = task.type)
                     historyDao.insert(history)
-                } else if (!newCompletedState && task.specificDate != null) {
-                    // Retirer de l'historique si décochée
+                } else if (!newIsCompleted && task.state == com.propentatech.kumbaka.data.model.TaskState.DONE && task.specificDate != null) {
                     historyDao.deleteByTaskAndDate(taskId, task.specificDate)
                 }
-                task.copy(isCompleted = newCompletedState)
+                task.copy(state = newState, isCompleted = newIsCompleted)
             }
         }
         
         taskDao.updateTask(updatedTask)
+        alarmScheduler.scheduleTaskAlarms(updatedTask)
     }
     
     /**

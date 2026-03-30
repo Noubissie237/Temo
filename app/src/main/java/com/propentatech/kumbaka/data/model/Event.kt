@@ -26,6 +26,7 @@ data class Event(
     @Serializable(with = LocalTimeSerializer::class)
     val time: LocalTime? = null,
     val location: String = "",
+    val colorCode: String? = null, // Couleur personnalisable
     val linkedTasks: List<String> = emptyList(), // IDs des tâches liées
     val displayOrder: Int = 0, // Ordre d'affichage pour le drag & drop
     @Serializable(with = LocalDateSerializer::class)

@@ -11,14 +11,31 @@ import com.propentatech.kumbaka.data.model.Event
 import com.propentatech.kumbaka.data.model.Note
 import com.propentatech.kumbaka.data.model.Task
 import com.propentatech.kumbaka.data.model.TaskCompletionHistory
+import com.propentatech.kumbaka.data.model.Transaction
+import com.propentatech.kumbaka.data.model.TransactionCategory
+import com.propentatech.kumbaka.data.model.Habit
+import com.propentatech.kumbaka.data.model.HabitLog
+import com.propentatech.kumbaka.data.model.MoodEntry
+import com.propentatech.kumbaka.data.model.AdvisorLog
+import com.propentatech.kumbaka.data.model.Project
+import com.propentatech.kumbaka.data.model.Milestone
+import com.propentatech.kumbaka.data.model.PlanningSession
+import com.propentatech.kumbaka.data.model.DayNote
+import com.propentatech.kumbaka.data.model.Alarm
 
 /**
  * Base de données Room pour l'application Kumbaka
  * Contient les tables pour les tâches, événements et notes
  */
 @Database(
-    entities = [Task::class, Event::class, Note::class, TaskCompletionHistory::class],
-    version = 7,
+    entities = [
+        Task::class, Event::class, Note::class, TaskCompletionHistory::class,
+        Transaction::class, TransactionCategory::class,
+        Habit::class, HabitLog::class, MoodEntry::class,
+        AdvisorLog::class, Project::class, Milestone::class,
+        PlanningSession::class, DayNote::class, Alarm::class
+    ],
+    version = 15,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -43,6 +60,19 @@ abstract class KumbakaDatabase : RoomDatabase() {
      * DAO pour l'historique des complétions de tâches
      */
     abstract fun taskCompletionHistoryDao(): TaskCompletionHistoryDao
+    
+    // Nouveaux DAOs (MyLive Premium)
+    abstract fun transactionDao(): TransactionDao
+    abstract fun transactionCategoryDao(): TransactionCategoryDao
+    abstract fun habitDao(): HabitDao
+    abstract fun habitLogDao(): HabitLogDao
+    abstract fun moodEntryDao(): MoodEntryDao
+    abstract fun advisorLogDao(): AdvisorLogDao
+    abstract fun projectDao(): ProjectDao
+    abstract fun milestoneDao(): MilestoneDao
+    abstract fun planningSessionDao(): PlanningSessionDao
+    abstract fun dayNoteDao(): DayNoteDao
+    abstract fun alarmDao(): com.propentatech.kumbaka.data.dao.AlarmDao
     
     companion object {
         @Volatile

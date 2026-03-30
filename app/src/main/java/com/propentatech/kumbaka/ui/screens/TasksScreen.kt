@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -36,9 +38,10 @@ import com.propentatech.kumbaka.KumbakaApplication
 import com.propentatech.kumbaka.data.model.Task
 import com.propentatech.kumbaka.data.model.TaskPriority
 import com.propentatech.kumbaka.data.model.TaskType
-import com.propentatech.kumbaka.data.model.shouldShowToday
 import com.propentatech.kumbaka.data.model.isCompletedToday
+import com.propentatech.kumbaka.data.model.shouldShowToday
 import com.propentatech.kumbaka.ui.components.EmptyStateMessage
+import com.propentatech.kumbaka.ui.components.PremiumTopAppBar
 import com.propentatech.kumbaka.ui.theme.*
 import com.propentatech.kumbaka.ui.viewmodel.TaskViewModel
 import com.propentatech.kumbaka.ui.viewmodel.TaskViewModelFactory
@@ -111,12 +114,13 @@ fun TasksScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            PremiumTopAppBar(
                 title = {
                     Text(
                         text = "Mes Tâches",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
                     )
                 },
                 actions = {
@@ -124,14 +128,10 @@ fun TasksScreen(
                         Icon(
                             imageVector = Icons.Default.ChecklistRtl,
                             contentDescription = "Voir toutes les tâches",
-                            tint = MaterialTheme.colorScheme.onSurface
+                            tint = Color.White
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                windowInsets = WindowInsets(top = 0.dp)
+                }
             )
         },
         floatingActionButton = {
@@ -163,7 +163,7 @@ fun TasksScreen(
                     EmptyStateMessage(
                         message = "Aucune tâche",
                         subtitle = "Créez votre première tâche pour commencer",
-                        icon = Icons.Outlined.CheckCircle,
+                        icon = Icons.Default.Check,
                         modifier = Modifier.padding(top = 48.dp)
                     )
                 }
@@ -274,37 +274,33 @@ fun TaskItem(
         ) {
             // Checkbox (masquée pour les tâches de demain)
             if (canToggle) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .border(
-                            width = 2.dp,
-                            color = if (isTaskCompleted) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
-                                MaterialTheme.colorScheme.outline,
-                            shape = CircleShape
-                        )
-                        .background(
-                            if (isTaskCompleted) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
-                                Color.Transparent
-                        )
-                        .clickable(onClick = onToggleComplete),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isTaskCompleted) {
-                        Text(
-                            text = "✓",
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
+                val stateIcon = when (task.state) {
+                    com.propentatech.kumbaka.data.model.TaskState.TODO -> Icons.Outlined.RadioButtonUnchecked
+                    com.propentatech.kumbaka.data.model.TaskState.IN_PROGRESS -> Icons.Outlined.PlayCircleOutline
+                    com.propentatech.kumbaka.data.model.TaskState.DONE -> Icons.Default.Check
+                    com.propentatech.kumbaka.data.model.TaskState.MISSED -> Icons.Default.Close
+                }
+                
+                val stateColor = when (task.state) {
+                    com.propentatech.kumbaka.data.model.TaskState.TODO -> MaterialTheme.colorScheme.outline
+                    com.propentatech.kumbaka.data.model.TaskState.IN_PROGRESS -> Color(0xFFFF6B00)
+                    com.propentatech.kumbaka.data.model.TaskState.DONE -> Color(0xFF4CAF50)
+                    com.propentatech.kumbaka.data.model.TaskState.MISSED -> Color.Red
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                IconButton(
+                    onClick = onToggleComplete,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = stateIcon,
+                        contentDescription = "Changer l'état",
+                        tint = stateColor,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
             }
 
             // Contenu de la tâche
@@ -365,10 +361,26 @@ fun TaskItem(
                     // Date pour les tâches occasionnelles
                     if (task.type == TaskType.OCCASIONAL && task.specificDate != null) {
                         Text(
-                            text = "• ${task.specificDate.format(DateTimeFormatter.ofPattern("dd MMM yyyy"))}",
+                            text = "• ${task.specificDate.format(DateTimeFormatter.ofPattern("dd MMM"))}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                    
+                    if (task.startTime != null) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                        ) {
+                            Text(
+                                text = "⏰ ${task.startTime.format(DateTimeFormatter.ofPattern("HH:mm"))}" + 
+                                       (if(task.endTime != null) " - ${task.endTime.format(DateTimeFormatter.ofPattern("HH:mm"))}" else ""),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }

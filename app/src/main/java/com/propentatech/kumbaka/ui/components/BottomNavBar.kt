@@ -25,14 +25,19 @@ fun BottomNavBar(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Liste des items de navigation
-    val items = listOf(
-        BottomNavItem(Screen.Home, "Accueil", Icons.Default.Home),
-        BottomNavItem(Screen.Tasks, "Tâches", Icons.Default.CheckCircle),
-        BottomNavItem(Screen.Notes, "Notes", Icons.Default.Edit),
-        BottomNavItem(Screen.Events, "Événements", Icons.Default.DateRange),
-        BottomNavItem(Screen.Settings, "Paramètres", Icons.Default.Settings)
-    )
+    // Liste des items de navigation (MyLive structure)
+    val items = com.propentatech.kumbaka.ui.navigation.bottomNavItems.map { item ->
+        val icon = when (item.icon) {
+            "home" -> Icons.Default.Home
+            "edit" -> Icons.Default.Edit
+            "calendar_month" -> Icons.Default.CalendarMonth
+            "account_balance" -> Icons.Default.AccountBalance
+            "event" -> Icons.Default.Event
+            "more_horiz" -> Icons.Default.MoreHoriz
+            else -> Icons.Default.HelpCenter
+        }
+        BottomNavItem(item.screen, item.label, icon)
+    }
 
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -56,6 +61,7 @@ fun BottomNavBar(
                     )
                 },
                 selected = isSelected,
+                alwaysShowLabel = false, // Plus propre pour 6 items
                 onClick = {
                     if (currentRoute != item.screen.route) {
                         navController.navigate(item.screen.route) {

@@ -7,6 +7,8 @@ package com.propentatech.kumbaka.ui.navigation
 sealed class Screen(val route: String) {
     // Écran d'onboarding
     object Onboarding : Screen("onboarding")
+    object AuthSetup : Screen("auth_setup")
+    object Login : Screen("login")
     
     // Écrans principaux avec navigation en bas
     object Home : Screen("home")
@@ -37,6 +39,18 @@ sealed class Screen(val route: String) {
     object Calendar : Screen("calendar")
     object Statistics : Screen("statistics")
     object AllTasks : Screen("all_tasks")
+    object Finance : Screen("finance")
+    object Reports : Screen("reports")
+    object Projects : Screen("projects")
+    object Lifestyle : Screen("lifestyle")
+    object Planning : Screen("planning")
+    object PlanningEditor : Screen("planning_editor/{sessionId}") {
+        fun createRoute(sessionId: String = "new") = "planning_editor/$sessionId"
+    }
+    object Plus : Screen("plus")
+    object Alarms : Screen("alarms")
+    object Stopwatch : Screen("stopwatch")
+    object Calculator : Screen("calculator")
 }
 
 /**
@@ -49,12 +63,13 @@ data class BottomNavItem(
 )
 
 /**
- * Liste des items de la navigation en bas
+ * Liste des items de la navigation en bas (MyLive structure)
  */
 val bottomNavItems = listOf(
-    BottomNavItem(Screen.Home, "Accueil", "home"),
-    BottomNavItem(Screen.Tasks, "Tâches", "check_circle"),
-    BottomNavItem(Screen.Notes, "Notes", "description"),
-    BottomNavItem(Screen.Events, "Événements", "event"),
-    BottomNavItem(Screen.Settings, "Paramètres", "settings")
+    BottomNavItem(Screen.Home, "Home", "home"),
+    BottomNavItem(Screen.Notes, "Notes", "edit"),
+    BottomNavItem(Screen.Calendar, "Calendar", "calendar_month"),
+    BottomNavItem(Screen.Finance, "Finance", "account_balance"),
+    BottomNavItem(Screen.Events, "Events", "event"),
+    BottomNavItem(Screen.Plus, "Plus", "more_horiz")
 )

@@ -88,11 +88,13 @@ object NotificationHelper {
         val notificationTitle = when (notificationType) {
             NotificationType.DAY_BEFORE -> "📅 Événement demain"
             NotificationType.FIVE_MINUTES -> "⏰ Événement dans 5 minutes"
+            else -> "Information"
         }
         
         val notificationText = when (notificationType) {
             NotificationType.DAY_BEFORE -> "Demain : $eventTitle"
             NotificationType.FIVE_MINUTES -> eventTitle
+            else -> eventTitle
         }
         
         val notification = NotificationCompat.Builder(context, CHANNEL_ID_EVENTS)
@@ -137,10 +139,52 @@ object NotificationHelper {
         val typeCode = when (type) {
             NotificationType.DAY_BEFORE -> 1
             NotificationType.FIVE_MINUTES -> 2
+            NotificationType.ANOMALY -> 3
+            NotificationType.FINANCE -> 4
+            NotificationType.PROJECT -> 5
+            NotificationType.PLANNING -> 6
         }
         return (eventId.hashCode() + typeCode * 1000000)
     }
     
+    /**
+     * Affiche une notification universelle de l'Assistant Omniscient
+     */
+    fun showUniversalNotification(
+        context: Context,
+        title: String,
+        message: String,
+        type: NotificationType
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        }
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            type.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID_EVENTS)
+            .setSmallIcon(R.drawable.ic_stat_name)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        val notificationManager = NotificationManagerCompat.from(context)
+        notificationManager.notify((System.currentTimeMillis() % 100000).toInt(), notification)
+    }
+
     /**
      * Annule toutes les notifications pour un événement
      */
@@ -154,9 +198,14 @@ object NotificationHelper {
 }
 
 /**
- * Types de notifications pour les événements
+ * Types de notifications universelles
  */
 enum class NotificationType {
     DAY_BEFORE,      // Notification 1 jour avant
-    FIVE_MINUTES     // Notification 5 minutes avant
+    FIVE_MINUTES,    // Notification 5 minutes avant
+    ANOMALY,         // Alerte proactive du Conseiller (dépenses anormales)
+    FINANCE,         // Transaction entrante/sortante importante
+    PROJECT,         // Rappel ou complétion de Milestone
+    PLANNING        // Rappel de séance de planning
 }
+

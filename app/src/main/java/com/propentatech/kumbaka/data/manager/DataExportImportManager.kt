@@ -166,6 +166,6 @@ class DataExportImportManager(
      */
     fun generateExportFileName(): String {
         val date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm"))
-        return "temo_backup_$date.json"
+        return "mylive_backup_$date.json"
     }
 }

@@ -1,6 +1,7 @@
 package com.propentatech.kumbaka.ui.screens
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -8,6 +9,11 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -34,6 +40,10 @@ import com.propentatech.kumbaka.ui.theme.*
 import com.propentatech.kumbaka.ui.viewmodel.ThemeViewModel
 import com.propentatech.kumbaka.ui.viewmodel.ThemeViewModelFactory
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
 
 /**
  * Écran des paramètres
@@ -42,6 +52,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    securityViewModel: com.propentatech.kumbaka.ui.viewmodel.SecurityViewModel,
     onNavigateBack: () -> Unit = {},
     onNavigateToStatistics: () -> Unit = {}
 ) {
@@ -63,6 +74,10 @@ fun SettingsScreen(
     var exportUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var importUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var pendingExportData by remember { mutableStateOf<ExportData?>(null) }
+    
+    // État pour le profil
+    var showProfileDialog by remember { mutableStateOf(false) }
+    val username by securityViewModel.username.collectAsState()
     
     val scope = rememberCoroutineScope()
     val dataManager = application.dataExportImportManager
@@ -262,6 +277,212 @@ fun SettingsScreen(
                 }
             }
 
+            // Section PROFIL (Premium)
+            item {
+                SettingsSection(title = "MON PROFIL") {
+                    SettingsItem(
+                        icon = Icons.Default.AccountCircle,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        iconBackground = MaterialTheme.colorScheme.primaryContainer,
+                        title = "Gérer mon profil",
+                        subtitle = "Changer mon nom ou mon code PIN",
+                        onClick = { showProfileDialog = true }
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    SettingsItemWithSwitch(
+                        icon = Icons.Default.Fingerprint,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        iconBackground = MaterialTheme.colorScheme.primaryContainer,
+                        title = "Empreinte digitale",
+                        subtitle = "Utiliser la biométrie pour déverrouiller",
+                        isChecked = securityViewModel.isFingerprintEnabled(),
+                        onCheckedChange = { securityViewModel.setFingerprintEnabled(it) }
+                    )
+                }
+            }
+
+            // Section SAUVEGARDE CLOUD (MyLive Premium)
+            item {
+                val cloudPrefs = application.cloudPreferences
+                var cloudEnabled by remember { mutableStateOf(cloudPrefs.isCloudBackupEnabled()) }
+                var accountName by remember { mutableStateOf(cloudPrefs.getGoogleAccountName()) }
+                var showAdvancedCloud by remember { mutableStateOf(false) }
+                var webClientId by remember { mutableStateOf(cloudPrefs.getGoogleWebClientId() ?: "") }
+                val lastBackup = cloudPrefs.getLastBackupTime()
+                
+                val signInLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.StartActivityForResult()
+                ) { result ->
+                    val data = result.data
+                    val task = com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(data)
+                    try {
+                        val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
+                        cloudPrefs.setGoogleAccountName(account.email)
+                        accountName = account.email
+                        Toast.makeText(context, "Connecté : ${account.email}", Toast.LENGTH_SHORT).show()
+                    } catch (e: com.google.android.gms.common.api.ApiException) {
+                        val errorMsg = when (e.statusCode) {
+                            com.google.android.gms.common.api.CommonStatusCodes.DEVELOPER_ERROR -> "Erreur de configuration (SHA-1/Package)"
+                            com.google.android.gms.common.api.CommonStatusCodes.NETWORK_ERROR -> "Erreur réseau"
+                            com.google.android.gms.common.api.CommonStatusCodes.SIGN_IN_REQUIRED -> "Connexion requise"
+                            else -> "Erreur ${e.statusCode}: ${e.message}"
+                        }
+                        android.util.Log.e("GoogleAuth", "Sign-in failed: ${e.statusCode}", e)
+                        Toast.makeText(context, "Échec Google : $errorMsg", Toast.LENGTH_LONG).show()
+                    } catch (e: Exception) {
+                        android.util.Log.e("GoogleAuth", "Sign-in failed", e)
+                        Toast.makeText(context, "Erreur inconnue : ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                SettingsSection(title = "SAUVEGARDE CLOUD") {
+                    SettingsItem(
+                        icon = Icons.Default.Cloud,
+                        iconTint = Color(0xFF4285F4), // Google Blue
+                        iconBackground = Color(0xFF4285F4).copy(alpha = 0.1f),
+                        title = if (accountName == null) "Connecter Google Drive" else "Google Drive connecté",
+                        subtitle = accountName ?: "Synchronisez vos données sur le cloud",
+                        onClick = {
+                            if (accountName == null) {
+                                try {
+                                    val intent = application.googleDriveManager.getSignInIntent(
+                                        webClientId.ifBlank { null }
+                                    )
+                                    signInLauncher.launch(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Erreur lors de l'ouverture de Google : ${e.message}", Toast.LENGTH_LONG).show()
+                                }
+                            } else {
+                                Toast.makeText(context, "Déjà connecté", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Section Avancée Toggle
+                    Text(
+                        text = if (showAdvancedCloud) "Cacher les paramètres avancés" else "Afficher les paramètres avancés",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .clickable { showAdvancedCloud = !showAdvancedCloud }
+                    )
+
+                    if (showAdvancedCloud) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                .padding(12.dp)
+                        ) {
+                            Text("Configuration Google Cloud", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            OutlinedTextField(
+                                value = webClientId,
+                                onValueChange = { 
+                                    webClientId = it
+                                    cloudPrefs.setGoogleWebClientId(it)
+                                },
+                                label = { Text("Web Client ID (Optionnel)") },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = { Text("xxxxxx.apps.googleusercontent.com") },
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodySmall
+                            )
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Text("Infos pour console Google Cloud :", style = MaterialTheme.typography.labelSmall)
+                            
+                            val packageInfo = "Package: ${context.packageName}"
+                            val sha1Info = "SHA-1: FF:63:AE:03:4F:76:0B:D0:CC:1A:03:EB:4B:72:AB:48:01:D9:A0:86"
+                            
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(packageInfo, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                                IconButton(onClick = {
+                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    val clip = android.content.ClipData.newPlainText("Package", context.packageName)
+                                    clipboard.setPrimaryClip(clip)
+                                    Toast.makeText(context, "Package copié", Toast.LENGTH_SHORT).show()
+                                }) { Icon(Icons.Default.ContentCopy, null, Modifier.size(16.dp)) }
+                            }
+                            
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(sha1Info, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                                IconButton(onClick = {
+                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    val clip = android.content.ClipData.newPlainText("SHA1", "FF:63:AE:03:4F:76:0B:D0:CC:1A:03:EB:4B:72:AB:48:01:D9:A0:86")
+                                    clipboard.setPrimaryClip(clip)
+                                    Toast.makeText(context, "SHA-1 copié", Toast.LENGTH_SHORT).show()
+                                }) { Icon(Icons.Default.ContentCopy, null, Modifier.size(16.dp)) }
+                            }
+                            
+                            Button(
+                                onClick = {
+                                    cloudPrefs.setGoogleAccountName(null)
+                                    cloudPrefs.setCloudBackupEnabled(false)
+                                    cloudPrefs.setGoogleWebClientId(null)
+                                    webClientId = ""
+                                    accountName = null
+                                    cloudEnabled = false
+                                    Toast.makeText(context, "Configuration réinitialisée", Toast.LENGTH_SHORT).show()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                            ) {
+                                Text("Réinitialiser Cloud")
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    SettingsItemWithSwitch(
+                        icon = Icons.Default.Sync,
+                        iconTint = Color(0xFF34A853), // Google Green
+                        iconBackground = Color(0xFF34A853).copy(alpha = 0.1f),
+                        title = "Sauvegarde automatique",
+                        subtitle = if (lastBackup > 0) {
+                            val fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                            "Dernière synchro : ${java.time.Instant.ofEpochMilli(lastBackup).atZone(java.time.ZoneId.systemDefault()).format(fmt)}"
+                        } else "Sauvegarde quotidienne sur Drive",
+                        isChecked = cloudEnabled,
+                        onCheckedChange = { enabled ->
+                            if (accountName != null) {
+                                cloudEnabled = enabled
+                                cloudPrefs.setCloudBackupEnabled(enabled)
+                                if (enabled) {
+                                    // Programmer le worker
+                                    val constraints = androidx.work.Constraints.Builder()
+                                        .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                                        .build()
+                                    val request = androidx.work.PeriodicWorkRequestBuilder<com.propentatech.kumbaka.data.cloud.BackupWorker>(
+                                        24, java.util.concurrent.TimeUnit.HOURS
+                                    ).setConstraints(constraints).build()
+                                    
+                                    androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                                        "cloud_backup",
+                                        androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
+                                        request
+                                    )
+                                    Toast.makeText(context, "Sauvegarde planifiée toutes les 24h", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    androidx.work.WorkManager.getInstance(context).cancelUniqueWork("cloud_backup")
+                                }
+                            } else {
+                                Toast.makeText(context, "Veuillez d'abord connecter votre compte Google", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    )
+                }
+            }
+
             // Section APPARENCE
             item {
                 SettingsSection(title = "APPARENCE") {
@@ -271,15 +492,32 @@ fun SettingsScreen(
                         iconBackground = MaterialTheme.colorScheme.primaryContainer,
                         title = "Mode sombre",
                         isChecked = darkModeEnabled,
-                        onCheckedChange = { themeViewModel.toggleDarkMode(it) }
+                        onCheckedChange = { themeViewModel.setDarkMode(it) }
                     )
                 
                 }
             }
 
-            // Section CONTACT & SUPPORT
+            // Section CONTACT & PARTAGE
             item {
-                SettingsSection(title = "CONTACT & SUPPORT") {
+                SettingsSection(title = "CONTACT & PARTAGE") {
+                    SettingsItem(
+                        icon = Icons.Default.Share,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        iconBackground = MaterialTheme.colorScheme.primaryContainer,
+                        title = "Partager MyLive",
+                        subtitle = "Faites découvrir l'application à vos amis",
+                        onClick = {
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, "Découvrez MyLive, l'assistant omniscient pour booster votre productivité ! Téléchargez l'app ici : https://mylive.app")
+                            }
+                            context.startActivity(Intent.createChooser(shareIntent, "Partager via"))
+                        }
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
                     SettingsItem(
                         icon = Icons.Default.Whatsapp,
                         iconTint = Color(0xFF25D366), // Couleur WhatsApp
@@ -288,7 +526,7 @@ fun SettingsScreen(
                         subtitle = "Donnez votre avis, proposez une mise à jour, ou posez vos questions",
                         onClick = {
                             val intent = Intent(Intent.ACTION_VIEW).apply {
-                                data = Uri.parse("https://wa.me/+237690232120")
+                                data = Uri.parse("https://wa.me/+237650970526")
                             }
                             try {
                                 context.startActivity(intent)
@@ -312,15 +550,39 @@ fun SettingsScreen(
                         iconTint = MaterialTheme.colorScheme.primary,
                         iconBackground = MaterialTheme.colorScheme.primaryContainer,
                         title = "Version de l'application",
-                        subtitle = "1.0.0",
+                        subtitle = "1.2.0 - MyLive Premium edition",
                         onClick = { }
                     )
+                    
+                    if (username.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        SettingsItem(
+                            icon = Icons.Default.Person,
+                            iconTint = MaterialTheme.colorScheme.primary,
+                            iconBackground = MaterialTheme.colorScheme.primaryContainer,
+                            title = "Utilisateur",
+                            subtitle = username,
+                            onClick = { }
+                        )
+                    }
                 }
             }
         }
     }
     
-    // Dialogues Export/Import/Delete
+    // Dialogues Export/Import/Delete/Profile
+    if (showProfileDialog) {
+        ProfileEditDialog(
+            currentUsername = username,
+            onDismiss = { showProfileDialog = false },
+            onSave = { newName, newPin ->
+                if (newName.isNotEmpty()) securityViewModel.updateUsername(newName)
+                if (newPin.isNotEmpty()) securityViewModel.updatePin(newPin)
+                showProfileDialog = false
+                Toast.makeText(context, "Profil mis à jour", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
     if (showExportDialog) {
         ExportDataDialog(
             onDismiss = { showExportDialog = false },
@@ -909,6 +1171,54 @@ fun CleanupPastEventsDialog(
                 )
             ) {
                 Text("Nettoyer")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annuler")
+            }
+        }
+    )
+}
+
+/**
+ * Dialogue d'édition du profil
+ */
+@Composable
+fun ProfileEditDialog(
+    currentUsername: String,
+    onDismiss: () -> Unit,
+    onSave: (String, String) -> Unit
+) {
+    var name by remember { mutableStateOf(currentUsername) }
+    var pin by remember { mutableStateOf("") }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Éditer mon profil", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nom d'utilisateur") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = pin,
+                    onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) pin = it },
+                    label = { Text("Nouveau PIN (4 chiffres)") },
+                    placeholder = { Text("Laisser vide pour ne pas changer") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onSave(name, pin) }) {
+                Text("Enregistrer")
             }
         },
         dismissButton = {

@@ -56,6 +56,8 @@ fun TaskEditorScreen(
     var selectedPriority by remember { mutableStateOf(TaskPriority.MEDIUM) }
     var selectedDate by remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
     var selectedDays by remember { mutableStateOf<List<DayOfWeek>>(emptyList()) }
+    var startTime by remember { mutableStateOf<java.time.LocalTime?>(null) }
+    var endTime by remember { mutableStateOf<java.time.LocalTime?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     
     // Stocker la tâche existante pour conserver les dates
@@ -73,6 +75,8 @@ fun TaskEditorScreen(
                     selectedPriority = it.priority
                     selectedDate = it.specificDate
                     selectedDays = it.selectedDays
+                    startTime = it.startTime
+                    endTime = it.endTime
                 }
             }
         }
@@ -220,6 +224,32 @@ fun TaskEditorScreen(
                 )
             }
 
+            // Sélecteurs d'Heure (Début / Fin)
+            Text(
+                text = "Horaires (Optionnel)",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    TimeQuickSelector(
+                        selectedTime = startTime,
+                        onTimeSelected = { startTime = it },
+                        label = "Heure de Début"
+                    )
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    TimeQuickSelector(
+                        selectedTime = endTime,
+                        onTimeSelected = { endTime = it },
+                        label = "Heure de Fin"
+                    )
+                }
+            }
+
             // Sélection de la priorité
             Text(
                 text = "Priorité",
@@ -265,6 +295,8 @@ fun TaskEditorScreen(
                                 specificDate = if (selectedType == TaskType.OCCASIONAL) selectedDate else null,
                                 selectedDays = if (selectedType == TaskType.PERIODIC) selectedDays else emptyList(),
                                 priority = selectedPriority,
+                                startTime = startTime,
+                                endTime = endTime,
                                 updatedAt = LocalDateTime.now()
                             )
                         } else {
@@ -277,6 +309,9 @@ fun TaskEditorScreen(
                                 specificDate = if (selectedType == TaskType.OCCASIONAL) selectedDate else null,
                                 selectedDays = if (selectedType == TaskType.PERIODIC) selectedDays else emptyList(),
                                 priority = selectedPriority,
+                                startTime = startTime,
+                                endTime = endTime,
+                                state = com.propentatech.kumbaka.data.model.TaskState.TODO,
                                 isCompleted = false,
                                 createdAt = LocalDateTime.now(),
                                 updatedAt = null
@@ -633,5 +668,66 @@ fun PriorityChip(
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
             )
         }
+    }
+}
+
+/**
+ * Sélecteur Rapide pour les heures
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimeQuickSelector(
+    selectedTime: java.time.LocalTime?,
+    onTimeSelected: (java.time.LocalTime?) -> Unit,
+    label: String
+) {
+    var showTimePicker by remember { mutableStateOf(false) }
+    
+    if (showTimePicker) {
+        val timePickerState = rememberTimePickerState(
+            initialHour = selectedTime?.hour ?: java.time.LocalTime.now().hour,
+            initialMinute = selectedTime?.minute ?: java.time.LocalTime.now().minute,
+            is24Hour = true
+        )
+        
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            title = { Text(label) },
+            text = {
+                TimePicker(state = timePickerState)
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onTimeSelected(java.time.LocalTime.of(timePickerState.hour, timePickerState.minute))
+                    showTimePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { 
+                    onTimeSelected(null) // Permet d'effacer l'heure
+                    showTimePicker = false 
+                }) {
+                    Text("Effacer")
+                }
+            }
+        )
+    }
+
+    OutlinedButton(
+        onClick = { showTimePicker = true },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = if (selectedTime != null) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+        )
+    ) {
+        Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = selectedTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: label,
+            style = MaterialTheme.typography.labelMedium
+        )
     }
 }

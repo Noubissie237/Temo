@@ -5,65 +5,81 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
 /**
- * Schéma de couleurs pour le mode sombre
- * Basé sur les maquettes de l'application Kumbaka
+ * THÈME MYLIVE PREMIUM — Orange Exclusif
+ * Mode Clair  : Orange + Blanc
+ * Mode Sombre : Orange + Noir profond
  */
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryBlueDark,
-    secondary = SecondaryPurpleDark,
-    tertiary = SecondaryPurpleDark,
-    background = BackgroundDark,
-    surface = SurfaceDark,
-    onPrimary = TextPrimaryDark,
-    onSecondary = TextPrimaryDark,
-    onTertiary = TextPrimaryDark,
-    onBackground = TextPrimaryDark,
-    onSurface = TextPrimaryDark,
-    surfaceVariant = SurfaceDark,
-    onSurfaceVariant = TextSecondaryDark
+    primary                 = OrangePrimary,
+    onPrimary               = Color.White,
+    primaryContainer        = OrangeDark,
+    onPrimaryContainer      = Color.White,
+    secondary               = OrangeLight,
+    onSecondary             = Color.White,
+    secondaryContainer      = SurfaceVariantDark,
+    onSecondaryContainer    = TextPrimaryDark,
+    tertiary                = OrangeLight,
+    onTertiary              = Color.White,
+    background              = BackgroundDark,
+    onBackground            = TextPrimaryDark,
+    surface                 = SurfaceDark,
+    onSurface               = TextPrimaryDark,
+    surfaceVariant          = SurfaceVariantDark,
+    onSurfaceVariant        = TextSecondaryDark,
+    error                   = ErrorRed,
+    onError                 = Color.White,
+    outline                 = OrangePrimary.copy(alpha = 0.4f)
 )
 
-/**
- * Schéma de couleurs pour le mode clair
- * Basé sur les maquettes de l'application Kumbaka
- */
 private val LightColorScheme = lightColorScheme(
-    primary = PrimaryBlue,
-    secondary = SecondaryPurple,
-    tertiary = SecondaryPurple,
-    background = BackgroundLight,
-    surface = SurfaceLight,
-    onPrimary = SurfaceLight,
-    onSecondary = SurfaceLight,
-    onTertiary = SurfaceLight,
-    onBackground = TextPrimary,
-    onSurface = TextPrimary,
-    surfaceVariant = BackgroundLight,
-    onSurfaceVariant = TextSecondary
+    primary                 = OrangePrimary,
+    onPrimary               = Color.White,
+    primaryContainer        = OrangeGlow,
+    onPrimaryContainer      = OrangeDark,
+    secondary               = OrangeLight,
+    onSecondary             = Color.White,
+    secondaryContainer      = SurfaceVariantLight,
+    onSecondaryContainer    = TextPrimary,
+    tertiary                = OrangeLight,
+    onTertiary              = Color.White,
+    background              = BackgroundLight,
+    onBackground            = TextPrimary,
+    surface                 = SurfaceLight,
+    onSurface               = TextPrimary,
+    surfaceVariant          = SurfaceVariantLight,
+    onSurfaceVariant        = TextSecondary,
+    error                   = ErrorRed,
+    onError                 = Color.White,
+    outline                 = OrangePrimary.copy(alpha = 0.4f)
 )
 
 @Composable
-fun KumbakaTheme(
+fun MyLiveTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, // Désactivé — on force notre palette orange
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    // Colorer la status bar avec l'orange
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as? Activity)?.window
+            window?.let {
+                it.statusBarColor = OrangePrimary.toArgb()
+                WindowCompat.getInsetsController(it, view).isAppearanceLightStatusBars = false
+            }
+        }
     }
 
     MaterialTheme(
